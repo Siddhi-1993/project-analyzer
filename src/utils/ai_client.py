@@ -1,12 +1,56 @@
 import asyncio
-from openai import AsyncOpenAI
 import logging
 
 logger = logging.getLogger(__name__)
 
 class AIClient:
     def __init__(self, api_key: str):
-        self.client = AsyncOpenAI(api_key=api_key)
+        try:
+            from openai import AsyncOpenAI
+            self.client = AsyncOpenAI(api_key=api_key)
+            logger.info("AIClient initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize AsyncOpenAI: {str(e)}")
+            # Fallback to sync client with async wrapper
+            try:
+                from openai import OpenAI
+                self._sync_client = OpenAI(api_key=api_key)
+                self.client = self._create_async_wrapper()
+                logger.info("AIClient initialized with sync wrapper")
+            except Exception as e2:
+                logger.error(f"Failed to initialize OpenAI client: {str(e2)}")
+                raise
+
+    def _create_async_wrapper(self):
+        """Create async wrapper for sync OpenAI client"""
+        class AsyncWrapper:
+            def __init__(self, sync_client):
+                self.sync_client = sync_client
+                
+            class Chat:
+                def __init__(self, sync_client):
+                    self.sync_client = sync_client
+                    
+                class Completions:
+                    def __init__(self, sync_client):
+                        self.sync_client = sync_client
+                        
+                    async def create(self, **kwargs):
+                        loop = asyncio.get_event_loop()
+                        return await loop.run_in_executor(
+                            None, 
+                            lambda: self.sync_client.chat.completions.create(**kwargs)
+                        )
+                
+                @property
+                def completions(self):
+                    return self.Completions(self.sync_client)
+            
+            @property
+            def chat(self):
+                return self.Chat(self.sync_client)
+        
+        return AsyncWrapper(self._sync_client)
 
     async def generate_response(self, prompt: str, context: str = "", model: str = "gpt-4-turbo-preview") -> str:
         """Generate AI response for analysis"""
