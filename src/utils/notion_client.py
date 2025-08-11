@@ -74,22 +74,22 @@ class NotionClient:
             raise
 
     async def update_page_status(self, page_id: str, status: str):
-        """Update the status of a project"""
+        """Update the analysis status of a project"""
         try:
             await self.client.pages.update(
                 page_id=page_id,
                 properties={
-                    "Status": {
+                    "Analysis Status": {
                         "select": {
                             "name": status
                         }
                     }
                 }
             )
-            logger.info(f"Updated status to: {status}")
+            logger.info(f"Updated Analysis Status to: {status}")
             
         except Exception as e:
-            logger.error(f"Failed to update status: {str(e)}")
+            logger.error(f"Failed to update Analysis Status: {str(e)}")
             raise
 
     async def update_page_results(self, page_id: str, results: Dict[str, Any]):
