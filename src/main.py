@@ -87,7 +87,7 @@ def main():
         logger.error(traceback.format_exc())
         return 1
 
-class CymbiotikaPr​ojectAnalyzer:
+class CymbiotikaProjectAnalyzer:
     def __init__(self, notion_client, ai_client, analyzers):
         self.notion_client = notion_client
         self.ai_client = ai_client
