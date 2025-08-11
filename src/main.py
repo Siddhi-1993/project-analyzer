@@ -36,20 +36,8 @@ def main():
         logger.info(f"NOTION_DATABASE_ID: {'✅ Set' if notion_db_id else '❌ Missing'}")
         logger.info(f"OPENAI_API_KEY: {'✅ Set' if openai_key else '❌ Missing'}")
         
-        if not page_id:
-            logger.error("PAGE_ID environment variable not found")
-            return 1
-            
-        if not notion_token:
-            logger.error("NOTION_TOKEN environment variable not found")
-            return 1
-            
-        if not notion_db_id:
-            logger.error("NOTION_DATABASE_ID environment variable not found")
-            return 1
-            
-        if not openai_key:
-            logger.error("OPENAI_API_KEY environment variable not found")
+        if not all([page_id, notion_token, notion_db_id, openai_key]):
+            logger.error("Missing required environment variables")
             return 1
         
         logger.info("All environment variables are set ✅")
@@ -81,14 +69,25 @@ def main():
             logger.error(f"❌ Failed to import analyzers: {str(e)}")
             return 1
         
-        # Initialize clients
-        logger.info("Initializing clients...")
+        # Initialize clients one by one to isolate the issue
+        logger.info("Initializing NotionClient...")
         try:
             notion_client = NotionClient(token=notion_token, database_id=notion_db_id)
-            ai_client = AIClient(api_key=openai_key)
-            logger.info("✅ Clients initialized")
+            logger.info("✅ NotionClient initialized")
         except Exception as e:
-            logger.error(f"❌ Failed to initialize clients: {str(e)}")
+            logger.error(f"❌ Failed to initialize NotionClient: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return 1
+            
+        logger.info("Initializing AIClient...")
+        try:
+            ai_client = AIClient(api_key=openai_key)
+            logger.info("✅ AIClient initialized")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize AIClient: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             return 1
         
         # Initialize analyzers
@@ -104,6 +103,8 @@ def main():
             logger.info("✅ Analyzers initialized")
         except Exception as e:
             logger.error(f"❌ Failed to initialize analyzers: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             return 1
         
         # Run async analysis
