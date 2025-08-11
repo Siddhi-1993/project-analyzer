@@ -40,7 +40,7 @@ def main():
             logger.error("Missing required environment variables")
             return 1
         
-        logger.info("All environment variables set ✅")
+        logger.info("All environment variables set")
         
         # Import modules
         logger.info("Importing modules...")
@@ -52,7 +52,7 @@ def main():
         from analyzers.risk_analyzer import RiskAnalyzer
         from analyzers.financial_analyzer import FinancialAnalyzer
         
-        logger.info("All modules imported ✅")
+        logger.info("All modules imported")
         
         # Initialize clients
         logger.info("Initializing clients...")
@@ -72,17 +72,17 @@ def main():
             'financial': FinancialAnalyzer(ai_client)
         }
         
-        logger.info("Clients and analyzers initialized ✅")
+        logger.info("Clients and analyzers initialized")
         
         # Run analysis
         analyzer = CymbiotikaPr​ojectAnalyzer(notion_client, ai_client, analyzers)
         asyncio.run(analyzer.create_analysis(page_id))
         
-        logger.info("=== Analysis Complete ✅ ===")
+        logger.info("=== Analysis Complete ===")
         return 0
         
     except Exception as e:
-        logger.error(f"❌ Error: {str(e)}")
+        logger.error(f"Error: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
         return 1
@@ -100,22 +100,22 @@ class CymbiotikaPr​ojectAnalyzer:
             
             # Update status
             await self.notion_client.update_page_status(page_id, "Analyzing")
-            logger.info("✅ Status updated to Analyzing")
+            logger.info("Status updated to Analyzing")
             
             # Get project data
             project_data = await self.notion_client.get_page_data(page_id)
             project_name = project_data.get('Project Name', 'Unknown Project')
             description = project_data.get('Description', 'No description available')
             
-            logger.info(f"✅ Project: {project_name}")
-            logger.info(f"✅ Description: {description[:100]}...")
+            logger.info(f"Project: {project_name}")
+            logger.info(f"Description: {description[:100]}...")
             
             # Run analyses and create reports
             results = {}
             report_links = {}
             
             # Market Analysis
-            logger.info("🔍 Running Market Analysis...")
+            logger.info("Running Market Analysis...")
             try:
                 market_analysis = await self.analyzers['market'].analyze(project_name, description)
                 results['Market Analysis'] = market_analysis
@@ -128,13 +128,13 @@ class CymbiotikaPr​ojectAnalyzer:
                     parent_page_id=page_id
                 )
                 report_links['Market Analysis'] = market_report_id
-                logger.info("✅ Market Analysis report created")
+                logger.info("Market Analysis report created")
             except Exception as e:
-                logger.error(f"❌ Market analysis failed: {str(e)}")
+                logger.error(f"Market analysis failed: {str(e)}")
                 results['Market Analysis'] = f"Analysis failed: {str(e)}"
             
             # Competitive Analysis
-            logger.info("🔍 Running Competitive Analysis...")
+            logger.info("Running Competitive Analysis...")
             try:
                 competitive_analysis = await self.analyzers['competitor'].analyze(project_name, description)
                 results['Competitive Analysis'] = competitive_analysis
@@ -146,13 +146,13 @@ class CymbiotikaPr​ojectAnalyzer:
                     parent_page_id=page_id
                 )
                 report_links['Competitive Analysis'] = competitive_report_id
-                logger.info("✅ Competitive Analysis report created")
+                logger.info("Competitive Analysis report created")
             except Exception as e:
-                logger.error(f"❌ Competitive analysis failed: {str(e)}")
+                logger.error(f"Competitive analysis failed: {str(e)}")
                 results['Competitive Analysis'] = f"Analysis failed: {str(e)}"
             
             # Risk Assessment
-            logger.info("🔍 Running Risk Assessment...")
+            logger.info("Running Risk Assessment...")
             try:
                 risk_analysis = await self.analyzers['risk'].analyze(project_name, description)
                 results['Risk Assessment'] = risk_analysis
@@ -164,13 +164,13 @@ class CymbiotikaPr​ojectAnalyzer:
                     parent_page_id=page_id
                 )
                 report_links['Risk Assessment'] = risk_report_id
-                logger.info("✅ Risk Assessment report created")
+                logger.info("Risk Assessment report created")
             except Exception as e:
-                logger.error(f"❌ Risk analysis failed: {str(e)}")
+                logger.error(f"Risk analysis failed: {str(e)}")
                 results['Risk Assessment'] = f"Analysis failed: {str(e)}"
             
             # Technical Feasibility
-            logger.info("🔍 Running Technical Analysis...")
+            logger.info("Running Technical Analysis...")
             try:
                 technical_analysis = await self.analyzers['technical'].analyze(project_name, description)
                 results['Technical Feasibility'] = technical_analysis
@@ -182,13 +182,13 @@ class CymbiotikaPr​ojectAnalyzer:
                     parent_page_id=page_id
                 )
                 report_links['Technical Feasibility'] = technical_report_id
-                logger.info("✅ Technical Feasibility report created")
+                logger.info("Technical Feasibility report created")
             except Exception as e:
-                logger.error(f"❌ Technical analysis failed: {str(e)}")
+                logger.error(f"Technical analysis failed: {str(e)}")
                 results['Technical Feasibility'] = f"Analysis failed: {str(e)}"
             
             # Financial Overview
-            logger.info("🔍 Running Financial Analysis...")
+            logger.info("Running Financial Analysis...")
             try:
                 financial_analysis = await self.analyzers['financial'].analyze(project_name, description)
                 results['Financial Overview'] = financial_analysis
@@ -200,13 +200,13 @@ class CymbiotikaPr​ojectAnalyzer:
                     parent_page_id=page_id
                 )
                 report_links['Financial Overview'] = financial_report_id
-                logger.info("✅ Financial Overview report created")
+                logger.info("Financial Overview report created")
             except Exception as e:
-                logger.error(f"❌ Financial analysis failed: {str(e)}")
+                logger.error(f"Financial analysis failed: {str(e)}")
                 results['Financial Overview'] = f"Analysis failed: {str(e)}"
             
             # Generate executive summary
-            logger.info("🔍 Generating Executive Summary...")
+            logger.info("Generating Executive Summary...")
             try:
                 recommendation, priority_score = await self._generate_summary(
                     project_name, description, results
@@ -214,29 +214,29 @@ class CymbiotikaPr​ojectAnalyzer:
                 results['AI Recommendation'] = recommendation
                 results['Priority Score'] = priority_score
                 results['Analysis Date'] = datetime.now().isoformat()
-                logger.info(f"✅ Executive summary generated (Priority: {priority_score}/10)")
+                logger.info(f"Executive summary generated (Priority: {priority_score}/10)")
             except Exception as e:
-                logger.error(f"❌ Summary failed: {str(e)}")
+                logger.error(f"Summary failed: {str(e)}")
                 results['AI Recommendation'] = f"Summary failed: {str(e)}"
                 results['Priority Score'] = 5
                 results['Analysis Date'] = datetime.now().isoformat()
             
             # Update project page
-            logger.info("📝 Updating project page...")
+            logger.info("Updating project page...")
             await self.notion_client.update_project_with_report_links(page_id, report_links, results)
-            logger.info("✅ Project page updated with report links")
+            logger.info("Project page updated with report links")
             
             # Complete
             await self.notion_client.update_page_status(page_id, "Complete")
-            logger.info("✅ Status updated to Complete")
+            logger.info("Status updated to Complete")
             
-            logger.info(f"🎉 Analysis complete for: {project_name}")
-            logger.info(f"📊 Created {len(report_links)} beautiful analysis reports")
+            logger.info(f"Analysis complete for: {project_name}")
+            logger.info(f"Created {len(report_links)} beautiful analysis reports")
             
             return results
             
         except Exception as e:
-            logger.error(f"❌ Analysis failed: {str(e)}")
+            logger.error(f"Analysis failed: {str(e)}")
             import traceback
             logger.error(traceback.format_exc())
             
