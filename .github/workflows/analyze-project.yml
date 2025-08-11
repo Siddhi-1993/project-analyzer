@@ -3,6 +3,12 @@ name: Analyze Project
 on:
   repository_dispatch:
     types: [analyze_project]
+  workflow_dispatch:
+    inputs:
+      page_id:
+        description: 'Notion Page ID to analyze'
+        required: true
+        type: string
 
 jobs:
   analyze:
@@ -27,7 +33,7 @@ jobs:
         NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
         NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        PAGE_ID: ${{ github.event.client_payload.page_id }}
+        PAGE_ID: ${{ github.event.inputs.page_id || github.event.client_payload.page_id }}
       run: python src/main.py
     
     - name: Upload logs
