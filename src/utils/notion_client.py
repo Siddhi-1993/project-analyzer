@@ -1,14 +1,52 @@
 import asyncio
 from typing import Dict, Any
-from notion_client import AsyncClient
 import logging
 
 logger = logging.getLogger(__name__)
 
 class NotionClient:
     def __init__(self, token: str, database_id: str):
-        self.client = AsyncClient(auth=token)
-        self.database_id = database_id
+        try:
+            # Import and initialize with minimal parameters
+            from notion_client import AsyncClient
+            self.client = AsyncClient(auth=token)
+            self.database_id = database_id
+            logger.info("NotionClient initialized successfully")
+        except Exception as e:
+            # If AsyncClient fails, try the synchronous client as fallback
+            logger.warning(f"AsyncClient failed: {str(e)}, trying fallback...")
+            from notion_client import Client
+            import asyncio
+            
+            # Create a wrapper for sync client
+            self._sync_client = Client(auth=token)
+            self.database_id = database_id
+            self.client = self._async_wrapper()
+            logger.info("NotionClient initialized with sync wrapper")
+
+    def _async_wrapper(self):
+        """Create async wrapper for sync client"""
+        class AsyncWrapper:
+            def __init__(self, sync_client):
+                self.sync_client = sync_client
+                
+            class Pages:
+                def __init__(self, sync_client):
+                    self.sync_client = sync_client
+                    
+                async def retrieve(self, page_id):
+                    loop = asyncio.get_event_loop()
+                    return await loop.run_in_executor(None, self.sync_client.pages.retrieve, page_id)
+                    
+                async def update(self, page_id, properties):
+                    loop = asyncio.get_event_loop()
+                    return await loop.run_in_executor(None, self.sync_client.pages.update, page_id, properties)
+            
+            @property
+            def pages(self):
+                return self.Pages(self.sync_client)
+        
+        return AsyncWrapper(self._sync_client)
 
     async def get_page_data(self, page_id: str) -> Dict[str, Any]:
         """Retrieve project data from Notion page"""
