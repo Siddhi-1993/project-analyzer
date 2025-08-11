@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Main entry point for beautiful Cymbiotika reports"""
-    logger.info("=== 🎨 Starting Cymbiotika Beautiful Report Generator ===")
+    logger.info("=== Starting Cymbiotika Beautiful Report Generator ===")
     
     try:
         # Check environment variables
@@ -113,11 +113,11 @@ def main():
             return 1
         
         # Run beautiful report generation
-        logger.info("🎨 Starting beautiful report generation...")
-        analyzer = BeautifulCymbiotikaPr​ojectAnalyzer(notion_client, ai_client, analyzers)
+        logger.info("Starting beautiful report generation...")
+        analyzer = BeautifulCymbiotika​ProjectAnalyzer(notion_client, ai_client, analyzers)
         asyncio.run(analyzer.create_beautiful_analysis(page_id))
         
-        logger.info("=== 🎉 Beautiful Cymbiotika Reports Complete ===")
+        logger.info("=== Beautiful Cymbiotika Reports Complete ===")
         return 0
         
     except Exception as e:
@@ -126,7 +126,7 @@ def main():
         logger.error(traceback.format_exc())
         return 1
 
-class BeautifulCymbiotikaPr​ojectAnalyzer:
+class BeautifulCymbiotika​ProjectAnalyzer:
     def __init__(self, notion_client, ai_client, analyzers):
         self.notion_client = notion_client
         self.ai_client = ai_client
@@ -135,29 +135,29 @@ class BeautifulCymbiotikaPr​ojectAnalyzer:
     async def create_beautiful_analysis(self, page_id: str) -> Dict[str, Any]:
         """Create beautiful analysis reports with rich formatting"""
         try:
-            logger.info(f"🎨 Starting beautiful Cymbiotika analysis for project: {page_id}")
+            logger.info(f"Starting beautiful Cymbiotika analysis for project: {page_id}")
             
             # Update status
-            logger.info("📝 Updating project status to 'Analyzing'...")
+            logger.info("Updating project status to 'Analyzing'...")
             await self.notion_client.update_page_status(page_id, "Analyzing")
             logger.info("✅ Status updated to Analyzing")
             
             # Get project data
-            logger.info("📋 Fetching project data from Notion...")
+            logger.info("Fetching project data from Notion...")
             project_data = await self.notion_client.get_page_data(page_id)
             project_name = project_data.get('Project Name', 'Unknown Project')
             description = project_data.get('Description', 'No description available')
             
             logger.info(f"✅ Project data retrieved:")
-            logger.info(f"   🏷️ Project: {project_name}")
-            logger.info(f"   📖 Description: {description[:100]}...")
+            logger.info(f"   Project: {project_name}")
+            logger.info(f"   Description: {description[:100]}...")
             
             # Generate analyses and create beautiful reports
             results = {}
             report_links = {}
             
-            # 📊 Market Analysis Report
-            logger.info("📊 Creating beautiful Market Analysis report...")
+            # Market Analysis Report
+            logger.info("Creating beautiful Market Analysis report...")
             try:
                 market_analysis = await self.analyzers['market'].analyze(project_name, description)
                 results['Market Analysis'] = market_analysis
@@ -174,8 +174,8 @@ class BeautifulCymbiotikaPr​ojectAnalyzer:
                 logger.error(f"❌ Market analysis failed: {str(e)}")
                 results['Market Analysis'] = f"Analysis failed: {str(e)}"
             
-            # 🏢 Competitive Analysis Report
-            logger.info("🏢 Creating beautiful Competitive Analysis report...")
+            # Competitive Analysis Report
+            logger.info("Creating beautiful Competitive Analysis report...")
             try:
                 competitive_analysis = await self.analyzers['competitor'].analyze(project_name, description)
                 results['Competitive Analysis'] = competitive_analysis
@@ -192,8 +192,8 @@ class BeautifulCymbiotikaPr​ojectAnalyzer:
                 logger.error(f"❌ Competitive analysis failed: {str(e)}")
                 results['Competitive Analysis'] = f"Analysis failed: {str(e)}"
             
-            # ⚠️ Risk Assessment Report
-            logger.info("⚠️ Creating beautiful Risk Assessment report...")
+            # Risk Assessment Report
+            logger.info("Creating beautiful Risk Assessment report...")
             try:
                 risk_analysis = await self.analyzers['risk'].analyze(project_name, description)
                 results['Risk Assessment'] = risk_analysis
@@ -210,8 +210,8 @@ class BeautifulCymbiotikaPr​ojectAnalyzer:
                 logger.error(f"❌ Risk analysis failed: {str(e)}")
                 results['Risk Assessment'] = f"Analysis failed: {str(e)}"
             
-            # ⚙️ Technical Feasibility Report
-            logger.info("⚙️ Creating beautiful Technical Feasibility report...")
+            # Technical Feasibility Report
+            logger.info("Creating beautiful Technical Feasibility report...")
             try:
                 technical_analysis = await self.analyzers['technical'].analyze(project_name, description)
                 results['Technical Feasibility'] = technical_analysis
@@ -228,8 +228,8 @@ class BeautifulCymbiotikaPr​ojectAnalyzer:
                 logger.error(f"❌ Technical analysis failed: {str(e)}")
                 results['Technical Feasibility'] = f"Analysis failed: {str(e)}"
             
-            # 💰 Financial Overview Report
-            logger.info("💰 Creating beautiful Financial Overview report...")
+            # Financial Overview Report
+            logger.info("Creating beautiful Financial Overview report...")
             try:
                 financial_analysis = await self.analyzers['financial'].analyze(project_name, description)
                 results['Financial Overview'] = financial_analysis
@@ -246,8 +246,8 @@ class BeautifulCymbiotikaPr​ojectAnalyzer:
                 logger.error(f"❌ Financial analysis failed: {str(e)}")
                 results['Financial Overview'] = f"Analysis failed: {str(e)}"
             
-            # 🎯 Generate Cymbiotika Executive Summary
-            logger.info("🎯 Generating executive recommendation...")
+            # Generate Cymbiotika Executive Summary
+            logger.info("Generating executive recommendation...")
             try:
                 recommendation, priority_score = await self._generate_executive_summary(
                     project_name, description, results
@@ -262,22 +262,18 @@ class BeautifulCymbiotikaPr​ojectAnalyzer:
                 results['Priority Score'] = 5
                 results['Analysis Date'] = datetime.now().isoformat()
             
-            # 📝 Update project with beautiful report links
-            logger.info("📝 Updating project page with links to beautiful reports...")
+            # Update project with beautiful report links
+            logger.info("Updating project page with links to beautiful reports...")
             await self.notion_client.update_project_with_report_links(page_id, report_links, results)
             logger.info("✅ Project updated with links to beautiful analysis reports")
             
-            # ✅ Complete
-            logger.info("✅ Updating project status to 'Complete'...")
+            # Complete
+            logger.info("Updating project status to 'Complete'...")
             await self.notion_client.update_page_status(page_id, "Complete")
             logger.info("✅ Status updated to Complete")
             
-            logger.info(f"🎉 Beautiful analysis complete for: {project_name}")
-            logger.info(f"📊 Created {len(report_links)} stunning analysis reports with:")
-            logger.info(f"   📈 Tables and charts")
-            logger.info(f"   🎨 Rich formatting with colors and emojis")
-            logger.info(f"   📋 Structured layouts")
-            logger.info(f"   💡 Executive callouts and insights")
+            logger.info(f"Beautiful analysis complete for: {project_name}")
+            logger.info(f"Created {len(report_links)} stunning analysis reports")
             
             return results
             
@@ -312,23 +308,23 @@ class BeautifulCymbiotikaPr​ojectAnalyzer:
             summary = await self.ai_client.generate_response(
                 """Create an executive summary for Cymbiotika leadership. Format as:
                 
-                ## 🎯 EXECUTIVE SUMMARY
+                ## EXECUTIVE SUMMARY
                 [2-3 sentences on overall project viability]
                 
-                ## 💼 STRATEGIC IMPACT
+                ## STRATEGIC IMPACT
                 - Revenue potential for premium supplement business
                 - Competitive advantage vs Thorne/MaryRuth's/Pure Encapsulations
                 - Brand alignment with Cymbiotika's bioavailability focus
                 
-                ## ⚡ KEY INSIGHTS
+                ## KEY INSIGHTS
                 - Top market opportunity
                 - Major competitive differentiator  
                 - Primary risk to mitigate
                 
-                ## 🚀 RECOMMENDATION
+                ## RECOMMENDATION
                 **[GO/NO-GO/CONDITIONAL]** - [Clear rationale]
                 
-                ## 📊 INVESTMENT SUMMARY
+                ## INVESTMENT SUMMARY
                 - Estimated investment: [Range]
                 - Timeline to revenue: [Months]
                 - Expected ROI: [Projection]
@@ -342,16 +338,11 @@ class BeautifulCymbiotikaPr​ojectAnalyzer:
                 """Rate this project's strategic priority for Cymbiotika (1-10):
                 
                 Consider:
-                - Premium supplement market opportunity ($40-100+ products)
+                - Premium supplement market opportunity
                 - Competitive positioning vs major players
                 - Technical feasibility for junior developer team
                 - Healthcare supplement regulatory environment
                 - ROI potential for D2C business model
-                
-                10 = Strategic imperative, exceptional opportunity
-                7-9 = High priority, strong business case
-                4-6 = Medium priority, some challenges
-                1-3 = Low priority, significant concerns
                 
                 Just respond with the number (1-10).""",
                 combined_analysis
