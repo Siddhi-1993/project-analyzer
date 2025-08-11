@@ -75,7 +75,7 @@ def main():
         logger.info("Clients and analyzers initialized")
         
         # Run analysis
-        analyzer = CymbiotikaPr​ojectAnalyzer(notion_client, ai_client, analyzers)
+        analyzer = CymbiotikaProjectAnalyzer(notion_client, ai_client, analyzers)
         asyncio.run(analyzer.create_analysis(page_id))
         
         logger.info("=== Analysis Complete ===")
