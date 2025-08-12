@@ -775,7 +775,7 @@ class NotionClient:
         try:
             properties = {}
             
-            # Create beautiful summaries with links
+            # Create rich text with proper links for each analysis field
             analysis_fields = {
                 'Market Analysis': 'Market Analysis',
                 'Competitive Analysis': 'Competitive Analysis', 
@@ -786,20 +786,46 @@ class NotionClient:
             
             for field_name, analysis_type in analysis_fields.items():
                 if analysis_type in report_links:
-                    report_url = f"https://notion.so/{report_links[analysis_type].replace('-', '')}"
-                    summary_text = f"📊 Beautiful {analysis_type} report created with tables, charts, and detailed insights. Click to view comprehensive analysis."
+                    report_id = report_links[analysis_type]
                     
+                    # Create rich text content with embedded link
+                    rich_text_content = [
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": f"📊 Beautiful {analysis_type} report created with comprehensive tables, charts, and insights. "
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": "Click here to view detailed analysis →"
+                            },
+                            "annotations": {
+                                "bold": True,
+                                "color": "blue"
+                            },
+                            "href": f"/{report_id.replace('-', '')}"
+                        }
+                    ]
+                    
+                    properties[field_name] = {
+                        "rich_text": rich_text_content
+                    }
+                else:
+                    # Fallback if report creation failed
                     properties[field_name] = {
                         "rich_text": [
                             {
+                                "type": "text",
                                 "text": {
-                                    "content": summary_text[:2000]
+                                    "content": f"📊 {analysis_type} completed. Check child pages below for detailed report."
                                 }
                             }
                         ]
                     }
             
-            # Add other results
+            # Add other fields
             if 'Priority Score' in results:
                 properties['Priority Score'] = {
                     "number": results['Priority Score']
@@ -816,6 +842,7 @@ class NotionClient:
                 properties['AI Recommendation'] = {
                     "rich_text": [
                         {
+                            "type": "text",
                             "text": {
                                 "content": str(results['AI Recommendation'])[:2000]
                             }
@@ -823,13 +850,38 @@ class NotionClient:
                     ]
                 }
             
+            # Update the page
             await self.client.pages.update(
                 page_id=project_page_id,
                 properties=properties
             )
             
-            logger.info("✅ Project updated with beautiful report links")
+            logger.info("✅ Project updated with report links")
             
         except Exception as e:
-            logger.error(f"Failed to update project with report links: {str(e)}")
-            raise
+            logger.error(f"Failed to update project links: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            
+            # Fallback: Just update with simple text
+            try:
+                fallback_properties = {}
+                for field_name in analysis_fields.keys():
+                    fallback_properties[field_name] = {
+                        "rich_text": [
+                            {
+                                "type": "text", 
+                                "text": {
+                                    "content": f"📊 {field_name} report created. See child pages below for detailed analysis."
+                                }
+                            }
+                        ]
+                    }
+                
+                await self.client.pages.update(
+                    page_id=project_page_id,
+                    properties=fallback_properties
+                )
+                logger.info("✅ Updated with fallback links")
+            except Exception as fallback_error:
+                logger.error(f"Fallback update also failed: {str(fallback_error)}")
