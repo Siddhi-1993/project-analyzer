@@ -62,24 +62,78 @@ class NotionClient:
             page = await self.client.pages.retrieve(page_id=page_id)
             properties = page['properties']
             
+            logger.info(f"🔍 Page properties found: {list(properties.keys())}")
+            
             # Extract text content from different property types
             data = {}
             
-            # Title property
-            if 'Project Name' in properties and properties['Project Name']['title']:
-                data['Project Name'] = properties['Project Name']['title'][0]['text']['content']
+            # Try different possible title property names
+            title_property_names = ['Project Name', 'Name', 'Title', 'title']
+            project_name = None
             
-            # Rich text property
-            if 'Description' in properties and properties['Description']['rich_text']:
-                data['Description'] = ''.join([
-                    text['text']['content'] for text in properties['Description']['rich_text']
-                ])
+            for prop_name in title_property_names:
+                if prop_name in properties:
+                    prop_data = properties[prop_name]
+                    logger.info(f"🔍 Found property '{prop_name}': {prop_data.get('type', 'unknown type')}")
+                    
+                    # Handle title property
+                    if prop_data.get('type') == 'title' and prop_data.get('title'):
+                        if len(prop_data['title']) > 0:
+                            project_name = prop_data['title'][0]['text']['content']
+                            logger.info(f"✅ Project name from title: '{project_name}'")
+                            break
+                    
+                    # Handle rich_text property (sometimes title is stored as rich text)
+                    elif prop_data.get('type') == 'rich_text' and prop_data.get('rich_text'):
+                        if len(prop_data['rich_text']) > 0:
+                            project_name = ''.join([text['text']['content'] for text in prop_data['rich_text']])
+                            logger.info(f"✅ Project name from rich_text: '{project_name}'")
+                            break
+            
+            # If we found a project name, use it; otherwise try to get it from the page title
+            if project_name:
+                data['Project Name'] = project_name
+            else:
+                # Fallback: try to get from page title or use a default
+                page_title = page.get('properties', {}).get('title', {})
+                if page_title and page_title.get('title'):
+                    data['Project Name'] = page_title['title'][0]['text']['content']
+                    logger.info(f"✅ Project name from page title: '{data['Project Name']}'")
+                else:
+                    # Last resort: use the page ID or a generic name
+                    data['Project Name'] = f"Project {page_id[:8]}"
+                    logger.warning(f"⚠️ Could not find project name, using: '{data['Project Name']}'")
+            
+            # Get description - try multiple property names
+            description_property_names = ['Description', 'Summary', 'Details', 'Notes']
+            description = None
+            
+            for prop_name in description_property_names:
+                if prop_name in properties:
+                    prop_data = properties[prop_name]
+                    if prop_data.get('type') == 'rich_text' and prop_data.get('rich_text'):
+                        description = ''.join([text['text']['content'] for text in prop_data['rich_text']])
+                        logger.info(f"✅ Description found in '{prop_name}': {description[:50]}...")
+                        break
+            
+            data['Description'] = description or 'No description available'
+            
+            logger.info(f"📋 Final extracted data:")
+            logger.info(f"   Project Name: '{data.get('Project Name', 'Not found')}'")
+            logger.info(f"   Description: '{data.get('Description', 'Not found')[:100]}...'")
             
             return data
             
         except Exception as e:
             logger.error(f"Failed to get page data: {str(e)}")
-            raise
+            import traceback
+            logger.error(traceback.format_exc())
+            
+            # Return fallback data
+            return {
+                'Project Name': f'Project {page_id[:8]}',
+                'Description': 'Could not retrieve project description'
+            }
 
     async def update_page_status(self, page_id: str, status: str):
         """Update the analysis status of a project"""
