@@ -75,7 +75,7 @@ def main():
         logger.info("Streamlined system initialized ✅")
         
         # Run streamlined analysis (child pages only)
-        analyzer = StreamlinedCymbiotikaPr​ojectAnalyzer(notion_client, ai_client, analyzers)
+        analyzer = StreamlinedCymbiotikaProjectAnalyzer(notion_client, ai_client, analyzers)
         asyncio.run(analyzer.create_child_page_analysis(page_id))
         
         logger.info("=== ✨ Streamlined Analysis Complete ===")
