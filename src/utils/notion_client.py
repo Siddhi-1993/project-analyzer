@@ -13,7 +13,7 @@ class NotionClient:
             from notion_client import AsyncClient
             self.client = AsyncClient(auth=token)
             self.database_id = database_id
-            self.parent_page_id = parent_page_id  # Page where reports will be created
+            self.parent_page_id = parent_page_id
             logger.info("NotionClient initialized successfully")
         except Exception as e:
             # If AsyncClient fails, try the synchronous client as fallback
@@ -62,65 +62,44 @@ class NotionClient:
             page = await self.client.pages.retrieve(page_id=page_id)
             properties = page['properties']
             
-            logger.info(f"🔍 Page properties found: {list(properties.keys())}")
+            logger.info(f"🔍 Available properties: {list(properties.keys())}")
             
-            # Extract text content from different property types
+            # Extract project name from any title property
             data = {}
-            
-            # Try different possible title property names
-            title_property_names = ['Project Name', 'Name', 'Title', 'title']
             project_name = None
             
-            for prop_name in title_property_names:
-                if prop_name in properties:
-                    prop_data = properties[prop_name]
-                    logger.info(f"🔍 Found property '{prop_name}': {prop_data.get('type', 'unknown type')}")
-                    
-                    # Handle title property
-                    if prop_data.get('type') == 'title' and prop_data.get('title'):
-                        if len(prop_data['title']) > 0:
-                            project_name = prop_data['title'][0]['text']['content']
-                            logger.info(f"✅ Project name from title: '{project_name}'")
-                            break
-                    
-                    # Handle rich_text property (sometimes title is stored as rich text)
-                    elif prop_data.get('type') == 'rich_text' and prop_data.get('rich_text'):
-                        if len(prop_data['rich_text']) > 0:
-                            project_name = ''.join([text['text']['content'] for text in prop_data['rich_text']])
-                            logger.info(f"✅ Project name from rich_text: '{project_name}'")
-                            break
+            # Look for title property (the main title of the page)
+            for prop_name, prop_data in properties.items():
+                if prop_data.get('type') == 'title':
+                    if prop_data.get('title') and len(prop_data['title']) > 0:
+                        project_name = prop_data['title'][0]['text']['content']
+                        logger.info(f"✅ Found project name: '{project_name}'")
+                        break
             
-            # If we found a project name, use it; otherwise try to get it from the page title
-            if project_name:
-                data['Project Name'] = project_name
-            else:
-                # Fallback: try to get from page title or use a default
-                page_title = page.get('properties', {}).get('title', {})
-                if page_title and page_title.get('title'):
-                    data['Project Name'] = page_title['title'][0]['text']['content']
-                    logger.info(f"✅ Project name from page title: '{data['Project Name']}'")
-                else:
-                    # Last resort: use the page ID or a generic name
-                    data['Project Name'] = f"Project {page_id[:8]}"
-                    logger.warning(f"⚠️ Could not find project name, using: '{data['Project Name']}'")
+            # If no title found, use a fallback
+            if not project_name:
+                project_name = f"Project {page_id[:8]}"
+                logger.warning(f"⚠️ No title found, using fallback: '{project_name}'")
             
-            # Get description - try multiple property names
-            description_property_names = ['Description', 'Summary', 'Details', 'Notes']
+            data['Project Name'] = project_name
+            
+            # Look for description in common property names
             description = None
+            description_props = ['Description', 'Summary', 'Details', 'Notes', 'Content']
             
-            for prop_name in description_property_names:
+            for prop_name in description_props:
                 if prop_name in properties:
                     prop_data = properties[prop_name]
                     if prop_data.get('type') == 'rich_text' and prop_data.get('rich_text'):
                         description = ''.join([text['text']['content'] for text in prop_data['rich_text']])
-                        logger.info(f"✅ Description found in '{prop_name}': {description[:50]}...")
+                        logger.info(f"✅ Found description in '{prop_name}': {description[:50]}...")
                         break
             
-            data['Description'] = description or 'No description available'
+            data['Description'] = description or 'No description provided'
             
-            logger.info(f"📋 Final extracted data:")
-            logger.info(f"   Project Name: '{data.get('Project Name', 'Not found')}'")
-            logger.info(f"   Description: '{data.get('Description', 'Not found')[:100]}...'")
+            logger.info(f"📋 Extracted data:")
+            logger.info(f"   Project: '{data['Project Name']}'")
+            logger.info(f"   Description: {len(data['Description'])} characters")
             
             return data
             
@@ -129,10 +108,9 @@ class NotionClient:
             import traceback
             logger.error(traceback.format_exc())
             
-            # Return fallback data
             return {
                 'Project Name': f'Project {page_id[:8]}',
-                'Description': 'Could not retrieve project description'
+                'Description': 'Could not retrieve project data'
             }
 
     async def update_page_status(self, page_id: str, status: str):
@@ -148,19 +126,47 @@ class NotionClient:
                     }
                 }
             )
-            logger.info(f"Updated Analysis Status to: {status}")
+            logger.info(f"✅ Updated Analysis Status to: {status}")
             
         except Exception as e:
             logger.error(f"Failed to update Analysis Status: {str(e)}")
             raise
 
+    async def update_analysis_completion(self, page_id: str, ai_recommendation: str):
+        """Update analysis date and AI recommendation"""
+        try:
+            await self.client.pages.update(
+                page_id=page_id,
+                properties={
+                    "Analysis Date": {
+                        "date": {
+                            "start": datetime.now().strftime('%Y-%m-%d')
+                        }
+                    },
+                    "AI Recommendation": {
+                        "rich_text": [
+                            {
+                                "text": {
+                                    "content": str(ai_recommendation)[:2000]  # Notion limit
+                                }
+                            }
+                        ]
+                    }
+                }
+            )
+            logger.info(f"✅ Updated Analysis Date and AI Recommendation")
+            
+        except Exception as e:
+            logger.error(f"Failed to update completion data: {str(e)}")
+            # Don't raise - this is not critical
+
     async def create_beautiful_analysis_report(self, project_name: str, analysis_type: str, 
                                              analysis_content: str, parent_page_id: str = None) -> str:
-        """Create a beautiful, free-form analysis report page"""
+        """Create a beautiful, comprehensive analysis report page"""
         
         try:
             # Use provided parent or default
-            parent_id = parent_page_id or self.parent_page_id or self.database_id
+            parent_id = parent_page_id or self.parent_page_id
             
             # Create report title with emojis
             emoji_map = {
@@ -175,31 +181,18 @@ class NotionClient:
             report_title = f"{emoji} {project_name} - {analysis_type}"
             
             # Build beautiful page content
-            children = self._build_beautiful_report_blocks(
+            children = self._build_comprehensive_report_blocks(
                 project_name, analysis_type, analysis_content, emoji
             )
             
-            # Create the page
-            if parent_id == self.database_id:
-                # Creating in database
-                parent_config = {"database_id": parent_id}
-                properties = {
-                    "Project Name": {
-                        "title": [{"text": {"content": report_title}}]
-                    }
-                }
-            else:
-                # Creating as child page
-                parent_config = {"page_id": parent_id}
-                properties = {
+            # Create the page as child of the project
+            response = await self.client.pages.create(
+                parent={"page_id": parent_id},
+                properties={
                     "title": {
                         "title": [{"text": {"content": report_title}}]
                     }
-                }
-            
-            response = await self.client.pages.create(
-                parent=parent_config,
-                properties=properties,
+                },
                 children=children
             )
             
@@ -214,19 +207,19 @@ class NotionClient:
             logger.error(traceback.format_exc())
             return f"Failed to create report: {str(e)}"
 
-    def _build_beautiful_report_blocks(self, project_name: str, analysis_type: str, 
-                                     content: str, emoji: str) -> List[Dict]:
-        """Build beautiful report blocks with rich formatting"""
+    def _build_comprehensive_report_blocks(self, project_name: str, analysis_type: str, 
+                                         content: str, emoji: str) -> List[Dict]:
+        """Build comprehensive report blocks with rich formatting"""
         blocks = []
         
-        # Header with cover and title
+        # Beautiful header section
         blocks.extend([
             {
                 "object": "block",
                 "type": "heading_1",
                 "heading_1": {
                     "rich_text": [
-                        {"type": "text", "text": {"content": f"{emoji} Cymbiotika {analysis_type}"}}
+                        {"type": "text", "text": {"content": f"🚀 Cymbiotika {analysis_type}"}}
                     ],
                     "color": "blue"
                 }
@@ -237,7 +230,17 @@ class NotionClient:
                 "paragraph": {
                     "rich_text": [
                         {"type": "text", "text": {"content": "PROJECT: "}, "annotations": {"bold": True, "color": "gray"}},
-                        {"type": "text", "text": {"content": project_name}, "annotations": {"bold": True}}
+                        {"type": "text", "text": {"content": project_name}, "annotations": {"bold": True, "color": "blue"}}
+                    ]
+                }
+            },
+            {
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [
+                        {"type": "text", "text": {"content": "ANALYSIS TYPE: "}, "annotations": {"bold": True, "color": "gray"}},
+                        {"type": "text", "text": {"content": f"{emoji} {analysis_type}"}, "annotations": {"bold": True}}
                     ]
                 }
             },
@@ -259,19 +262,19 @@ class NotionClient:
         ])
         
         # Add executive summary callout
-        summary = self._extract_executive_summary(content)
+        summary = self._extract_key_insight(content)
         if summary:
             blocks.append({
                 "object": "block",
                 "type": "callout",
                 "callout": {
-                    "rich_text": [{"type": "text", "text": {"content": summary}}],
-                    "icon": {"emoji": "💡"},
+                    "rich_text": [{"type": "text", "text": {"content": f"💡 KEY INSIGHT: {summary}"}}],
+                    "icon": {"emoji": "🎯"},
                     "color": "blue_background"
                 }
             })
         
-        # Parse content into structured sections with tables where appropriate
+        # Add specialized content based on analysis type
         if analysis_type == "Market Analysis":
             blocks.extend(self._build_market_analysis_blocks(content))
         elif analysis_type == "Competitive Analysis":
@@ -283,9 +286,9 @@ class NotionClient:
         elif analysis_type == "Financial Overview":
             blocks.extend(self._build_financial_analysis_blocks(content))
         else:
-            blocks.extend(self._build_general_analysis_blocks(content))
+            blocks.extend(self._parse_content_to_blocks(content))
         
-        # Add footer
+        # Add beautiful footer
         blocks.extend([
             {
                 "object": "block",
@@ -294,43 +297,50 @@ class NotionClient:
             },
             {
                 "object": "block",
-                "type": "paragraph",
-                "paragraph": {
+                "type": "callout",
+                "callout": {
                     "rich_text": [
                         {"type": "text", "text": {"content": "🔬 Powered by Cymbiotika AI Analysis Engine"}, 
-                         "annotations": {"italic": True, "color": "gray"}}
-                    ]
+                         "annotations": {"italic": True}}
+                    ],
+                    "icon": {"emoji": "⚡"},
+                    "color": "gray_background"
                 }
             }
         ])
         
         return blocks
 
-    def _extract_executive_summary(self, content: str) -> str:
-        """Extract key insight for executive summary"""
+    def _extract_key_insight(self, content: str) -> str:
+        """Extract the most important insight from the analysis"""
         lines = content.split('\n')
-        meaningful_lines = []
+        insights = []
         
         for line in lines:
             line = line.strip()
             if len(line) > 50 and not line.startswith(('#', '*', '-')) and '**' not in line:
-                meaningful_lines.append(line)
-                if len(meaningful_lines) >= 2:
+                # Look for lines that sound like insights
+                if any(keyword in line.lower() for keyword in ['opportunity', 'key', 'important', 'recommend', 'should', 'significant']):
+                    insights.append(line)
+                elif len(insights) == 0 and len(line) > 80:  # First substantial line
+                    insights.append(line)
+                
+                if len(insights) >= 2:
                     break
         
-        return ' '.join(meaningful_lines[:2]) if meaningful_lines else ""
+        return ' '.join(insights[:1]) if insights else ""
 
     def _build_market_analysis_blocks(self, content: str) -> List[Dict]:
-        """Build market analysis with tables and rich formatting"""
+        """Build market analysis with enhanced formatting"""
         blocks = []
         
-        # Market Overview Table
+        # Market opportunity table
         blocks.extend([
             {
                 "object": "block",
-                "type": "heading_2",
+                "type": "heading_2", 
                 "heading_2": {
-                    "rich_text": [{"type": "text", "text": {"content": "📈 Market Overview"}}],
+                    "rich_text": [{"type": "text", "text": {"content": "📈 Market Opportunity Assessment"}}],
                     "color": "green"
                 }
             },
@@ -353,12 +363,22 @@ class NotionClient:
                             }
                         },
                         {
-                            "object": "block",
+                            "object": "block", 
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "Market Size"}}],
-                                    [{"type": "text", "text": {"content": "Premium supplement market"}}]
+                                    [{"type": "text", "text": {"content": "🎯 Target Market"}}],
+                                    [{"type": "text", "text": {"content": "Health-conscious consumers, 25-55 years"}}]
+                                ]
+                            }
+                        },
+                        {
+                            "object": "block",
+                            "type": "table_row", 
+                            "table_row": {
+                                "cells": [
+                                    [{"type": "text", "text": {"content": "📊 Market Size"}}],
+                                    [{"type": "text", "text": {"content": "Premium supplement market, $40-100+ products"}}]
                                 ]
                             }
                         },
@@ -367,8 +387,8 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "Growth Rate"}}],
-                                    [{"type": "text", "text": {"content": "15-25% annually"}}]
+                                    [{"type": "text", "text": {"content": "📈 Growth Rate"}}],
+                                    [{"type": "text", "text": {"content": "15-25% annually in premium segments"}}]
                                 ]
                             }
                         },
@@ -377,8 +397,8 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "Target Demographics"}}],
-                                    [{"type": "text", "text": {"content": "Health-conscious, 25-55 years"}}]
+                                    [{"type": "text", "text": {"content": "🚀 Opportunity"}}],
+                                    [{"type": "text", "text": {"content": "High potential for bioavailable products"}}]
                                 ]
                             }
                         }
@@ -387,22 +407,21 @@ class NotionClient:
             }
         ])
         
-        # Parse and add content sections
-        blocks.extend(self._parse_content_to_blocks(content, "Market"))
-        
+        # Parse remaining content
+        blocks.extend(self._parse_content_to_blocks(content))
         return blocks
 
     def _build_competitive_analysis_blocks(self, content: str) -> List[Dict]:
-        """Build competitive analysis with competitor comparison table"""
+        """Build competitive analysis with competitor table"""
         blocks = []
         
-        # Competitor Comparison Table
+        # Cymbiotika vs Competitors table
         blocks.extend([
             {
                 "object": "block",
                 "type": "heading_2",
                 "heading_2": {
-                    "rich_text": [{"type": "text", "text": {"content": "🏢 Competitor Landscape"}}],
+                    "rich_text": [{"type": "text", "text": {"content": "🏢 Competitive Landscape"}}],
                     "color": "orange"
                 }
             },
@@ -420,7 +439,7 @@ class NotionClient:
                             "table_row": {
                                 "cells": [
                                     [{"type": "text", "text": {"content": "Competitor"}, "annotations": {"bold": True}}],
-                                    [{"type": "text", "text": {"content": "Positioning"}, "annotations": {"bold": True}}],
+                                    [{"type": "text", "text": {"content": "Position"}, "annotations": {"bold": True}}],
                                     [{"type": "text", "text": {"content": "Price Range"}, "annotations": {"bold": True}}],
                                     [{"type": "text", "text": {"content": "Key Strength"}, "annotations": {"bold": True}}]
                                 ]
@@ -431,7 +450,7 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "Thorne HealthTech"}, "annotations": {"bold": True}}],
+                                    [{"type": "text", "text": {"content": "🧪 Thorne HealthTech"}, "annotations": {"bold": True}}],
                                     [{"type": "text", "text": {"content": "Clinical-grade"}}],
                                     [{"type": "text", "text": {"content": "$25-60"}}],
                                     [{"type": "text", "text": {"content": "Research-backed"}}]
@@ -443,10 +462,10 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "MaryRuth Organics"}, "annotations": {"bold": True}}],
+                                    [{"type": "text", "text": {"content": "🌱 MaryRuth Organics"}, "annotations": {"bold": True}}],
                                     [{"type": "text", "text": {"content": "Organic, Family"}}],
                                     [{"type": "text", "text": {"content": "$20-50"}}],
-                                    [{"type": "text", "text": {"content": "Liquid formulas"}}]
+                                    [{"type": "text", "text": {"content": "Liquid delivery"}}]
                                 ]
                             }
                         },
@@ -455,7 +474,7 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "Pure Encapsulations"}, "annotations": {"bold": True}}],
+                                    [{"type": "text", "text": {"content": "💊 Pure Encapsulations"}, "annotations": {"bold": True}}],
                                     [{"type": "text", "text": {"content": "Practitioner"}}],
                                     [{"type": "text", "text": {"content": "$15-45"}}],
                                     [{"type": "text", "text": {"content": "Hypoallergenic"}}]
@@ -467,8 +486,8 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "Cymbiotika"}, "annotations": {"bold": True, "color": "blue"}}],
-                                    [{"type": "text", "text": {"content": "Premium, Bioavailable"}}],
+                                    [{"type": "text", "text": {"content": "🚀 CYMBIOTIKA"}, "annotations": {"bold": True, "color": "blue"}}],
+                                    [{"type": "text", "text": {"content": "Premium Bio-available"}}],
                                     [{"type": "text", "text": {"content": "$40-100+"}}],
                                     [{"type": "text", "text": {"content": "Liposomal delivery"}}]
                                 ]
@@ -479,15 +498,14 @@ class NotionClient:
             }
         ])
         
-        blocks.extend(self._parse_content_to_blocks(content, "Competitive"))
-        
+        blocks.extend(self._parse_content_to_blocks(content))
         return blocks
 
     def _build_risk_analysis_blocks(self, content: str) -> List[Dict]:
         """Build risk analysis with risk matrix"""
         blocks = []
         
-        # Risk Matrix
+        # Risk assessment matrix
         blocks.extend([
             {
                 "object": "block",
@@ -522,10 +540,10 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "🏛️ Regulatory"}}],
+                                    [{"type": "text", "text": {"content": "🏛️ Regulatory Compliance"}}],
                                     [{"type": "text", "text": {"content": "Medium"}}],
                                     [{"type": "text", "text": {"content": "High"}}],
-                                    [{"type": "text", "text": {"content": "🔴 High"}, "annotations": {"bold": True}}]
+                                    [{"type": "text", "text": {"content": "🔴 HIGH"}, "annotations": {"bold": True}}]
                                 ]
                             }
                         },
@@ -534,10 +552,10 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "⚗️ Supply Chain"}}],
+                                    [{"type": "text", "text": {"content": "🏭 Supply Chain"}}],
                                     [{"type": "text", "text": {"content": "Medium"}}],
                                     [{"type": "text", "text": {"content": "Medium"}}],
-                                    [{"type": "text", "text": {"content": "🟡 Medium"}, "annotations": {"bold": True}}]
+                                    [{"type": "text", "text": {"content": "🟡 MEDIUM"}, "annotations": {"bold": True}}]
                                 ]
                             }
                         },
@@ -546,10 +564,22 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "💻 Technical"}}],
+                                    [{"type": "text", "text": {"content": "💻 Technical Implementation"}}],
                                     [{"type": "text", "text": {"content": "Low"}}],
                                     [{"type": "text", "text": {"content": "Medium"}}],
-                                    [{"type": "text", "text": {"content": "🟢 Low"}, "annotations": {"bold": True}}]
+                                    [{"type": "text", "text": {"content": "🟢 LOW"}, "annotations": {"bold": True}}]
+                                ]
+                            }
+                        },
+                        {
+                            "object": "block",
+                            "type": "table_row",
+                            "table_row": {
+                                "cells": [
+                                    [{"type": "text", "text": {"content": "💰 Financial/Market"}}],
+                                    [{"type": "text", "text": {"content": "Medium"}}],
+                                    [{"type": "text", "text": {"content": "High"}}],
+                                    [{"type": "text", "text": {"content": "🔴 HIGH"}, "annotations": {"bold": True}}]
                                 ]
                             }
                         }
@@ -558,15 +588,14 @@ class NotionClient:
             }
         ])
         
-        blocks.extend(self._parse_content_to_blocks(content, "Risk"))
-        
+        blocks.extend(self._parse_content_to_blocks(content))
         return blocks
 
     def _build_technical_analysis_blocks(self, content: str) -> List[Dict]:
-        """Build technical analysis with development timeline"""
+        """Build technical analysis with development roadmap"""
         blocks = []
         
-        # Development Timeline
+        # Development timeline
         blocks.extend([
             {
                 "object": "block",
@@ -589,9 +618,9 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "Phase"}, "annotations": {"bold": True}}],
+                                    [{"type": "text", "text": {"content": "Development Phase"}, "annotations": {"bold": True}}],
                                     [{"type": "text", "text": {"content": "Timeline"}, "annotations": {"bold": True}}],
-                                    [{"type": "text", "text": {"content": "Team Requirement"}, "annotations": {"bold": True}}]
+                                    [{"type": "text", "text": {"content": "Team Requirements"}, "annotations": {"bold": True}}]
                                 ]
                             }
                         },
@@ -602,7 +631,7 @@ class NotionClient:
                                 "cells": [
                                     [{"type": "text", "text": {"content": "🎯 Planning & Design"}}],
                                     [{"type": "text", "text": {"content": "2-4 weeks"}}],
-                                    [{"type": "text", "text": {"content": "1 Senior + 1 Junior"}}]
+                                    [{"type": "text", "text": {"content": "1 Senior + 1 Junior Dev"}}]
                                 ]
                             }
                         },
@@ -613,7 +642,7 @@ class NotionClient:
                                 "cells": [
                                     [{"type": "text", "text": {"content": "🏗️ Core Development"}}],
                                     [{"type": "text", "text": {"content": "8-12 weeks"}}],
-                                    [{"type": "text", "text": {"content": "1 Senior + 2-3 Junior"}}]
+                                    [{"type": "text", "text": {"content": "1 Senior + 2-3 Junior Dev"}}]
                                 ]
                             }
                         },
@@ -624,7 +653,18 @@ class NotionClient:
                                 "cells": [
                                     [{"type": "text", "text": {"content": "🧪 Testing & Launch"}}],
                                     [{"type": "text", "text": {"content": "3-4 weeks"}}],
-                                    [{"type": "text", "text": {"content": "Full team"}}]
+                                    [{"type": "text", "text": {"content": "Full team involvement"}}]
+                                ]
+                            }
+                        },
+                        {
+                            "object": "block",
+                            "type": "table_row",
+                            "table_row": {
+                                "cells": [
+                                    [{"type": "text", "text": {"content": "📈 Optimization"}}],
+                                    [{"type": "text", "text": {"content": "Ongoing"}}],
+                                    [{"type": "text", "text": {"content": "1-2 Junior Dev maintenance"}}]
                                 ]
                             }
                         }
@@ -633,15 +673,14 @@ class NotionClient:
             }
         ])
         
-        blocks.extend(self._parse_content_to_blocks(content, "Technical"))
-        
+        blocks.extend(self._parse_content_to_blocks(content))
         return blocks
 
     def _build_financial_analysis_blocks(self, content: str) -> List[Dict]:
-        """Build financial analysis with financial projections table"""
+        """Build financial analysis with projections"""
         blocks = []
         
-        # Financial Projections
+        # Financial projections table
         blocks.extend([
             {
                 "object": "block",
@@ -664,7 +703,7 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "Metric"}, "annotations": {"bold": True}}],
+                                    [{"type": "text", "text": {"content": "Financial Metric"}, "annotations": {"bold": True}}],
                                     [{"type": "text", "text": {"content": "Year 1"}, "annotations": {"bold": True}}],
                                     [{"type": "text", "text": {"content": "Year 2"}, "annotations": {"bold": True}}],
                                     [{"type": "text", "text": {"content": "Year 3"}, "annotations": {"bold": True}}]
@@ -676,10 +715,10 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "💵 Revenue"}, "annotations": {"bold": True}}],
-                                    [{"type": "text", "text": {"content": "$200K-500K"}}],
-                                    [{"type": "text", "text": {"content": "$800K-1.5M"}}],
-                                    [{"type": "text", "text": {"content": "$2M-4M"}}]
+                                    [{"type": "text", "text": {"content": "💵 Revenue Potential"}, "annotations": {"bold": True}}],
+                                    [{"type": "text", "text": {"content": "$200K - $500K"}}],
+                                    [{"type": "text", "text": {"content": "$800K - $1.5M"}}],
+                                    [{"type": "text", "text": {"content": "$2M - $4M"}}]
                                 ]
                             }
                         },
@@ -688,10 +727,10 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "💸 Costs"}, "annotations": {"bold": True}}],
-                                    [{"type": "text", "text": {"content": "$150K-300K"}}],
-                                    [{"type": "text", "text": {"content": "$400K-700K"}}],
-                                    [{"type": "text", "text": {"content": "$1M-2M"}}]
+                                    [{"type": "text", "text": {"content": "💸 Development Costs"}, "annotations": {"bold": True}}],
+                                    [{"type": "text", "text": {"content": "$150K - $300K"}}],
+                                    [{"type": "text", "text": {"content": "$100K - $200K"}}],
+                                    [{"type": "text", "text": {"content": "$75K - $150K"}}]
                                 ]
                             }
                         },
@@ -700,10 +739,22 @@ class NotionClient:
                             "type": "table_row",
                             "table_row": {
                                 "cells": [
-                                    [{"type": "text", "text": {"content": "📈 Profit"}, "annotations": {"bold": True}}],
-                                    [{"type": "text", "text": {"content": "$50K-200K"}}],
-                                    [{"type": "text", "text": {"content": "$400K-800K"}}],
-                                    [{"type": "text", "text": {"content": "$1M-2M"}}]
+                                    [{"type": "text", "text": {"content": "📈 Projected Profit"}, "annotations": {"bold": True}}],
+                                    [{"type": "text", "text": {"content": "$50K - $200K"}}],
+                                    [{"type": "text", "text": {"content": "$400K - $800K"}}],
+                                    [{"type": "text", "text": {"content": "$1M - $2M"}}]
+                                ]
+                            }
+                        },
+                        {
+                            "object": "block",
+                            "type": "table_row",
+                            "table_row": {
+                                "cells": [
+                                    [{"type": "text", "text": {"content": "🎯 ROI Estimate"}, "annotations": {"bold": True}}],
+                                    [{"type": "text", "text": {"content": "25% - 67%"}}],
+                                    [{"type": "text", "text": {"content": "400% - 800%"}}],
+                                    [{"type": "text", "text": {"content": "1300% - 2000%"}}]
                                 ]
                             }
                         }
@@ -712,36 +763,24 @@ class NotionClient:
             }
         ])
         
-        blocks.extend(self._parse_content_to_blocks(content, "Financial"))
-        
+        blocks.extend(self._parse_content_to_blocks(content))
         return blocks
 
-    def _build_general_analysis_blocks(self, content: str) -> List[Dict]:
-        """Build general analysis blocks"""
-        return self._parse_content_to_blocks(content, "General")
-
-    def _parse_content_to_blocks(self, content: str, analysis_type: str) -> List[Dict]:
-        """Parse analysis content into beautiful blocks"""
+    def _parse_content_to_blocks(self, content: str) -> List[Dict]:
+        """Parse content into beautifully formatted blocks"""
         blocks = []
         lines = content.split('\n')
-        
-        current_section = []
         
         for line in lines:
             line = line.strip()
             if not line:
                 continue
                 
-            # Main headings with emojis
+            # Main headings with emojis  
             if line.startswith('## ') or (line.startswith('**') and line.endswith('**') and len(line) > 10):
-                # Add previous section
-                if current_section:
-                    blocks.extend(current_section)
-                    current_section = []
-                
                 heading_text = line.replace('##', '').replace('**', '').strip()
                 
-                # Add emoji based on content
+                # Add contextual emojis
                 if any(word in heading_text.lower() for word in ['opportunity', 'market', 'size']):
                     heading_text = f"📈 {heading_text}"
                 elif any(word in heading_text.lower() for word in ['strategy', 'position', 'competitive']):
@@ -750,8 +789,10 @@ class NotionClient:
                     heading_text = f"⚠️ {heading_text}"
                 elif any(word in heading_text.lower() for word in ['recommend', 'action', 'next']):
                     heading_text = f"✅ {heading_text}"
+                elif any(word in heading_text.lower() for word in ['financial', 'revenue', 'cost']):
+                    heading_text = f"💰 {heading_text}"
                 
-                current_section.append({
+                blocks.append({
                     "object": "block",
                     "type": "heading_2",
                     "heading_2": {
@@ -766,7 +807,7 @@ class NotionClient:
                     subheading_text = subheading_text.split('.', 1)[1].strip()
                 subheading_text = subheading_text.replace('**', '')
                 
-                current_section.append({
+                blocks.append({
                     "object": "block",
                     "type": "heading_3",
                     "heading_3": {
@@ -774,19 +815,21 @@ class NotionClient:
                     }
                 })
             
-            # Bullet points with emojis
+            # Bullet points with contextual emojis
             elif line.startswith(('- ', '• ')):
                 bullet_text = line[2:].strip()
                 
                 # Add contextual emojis to bullets
-                if any(word in bullet_text.lower() for word in ['increase', 'grow', 'opportunity', 'positive']):
+                if any(word in bullet_text.lower() for word in ['increase', 'grow', 'opportunity', 'positive', 'strong']):
                     bullet_text = f"📈 {bullet_text}"
-                elif any(word in bullet_text.lower() for word in ['decrease', 'reduce', 'risk', 'negative']):
+                elif any(word in bullet_text.lower() for word in ['decrease', 'reduce', 'risk', 'negative', 'challenge']):
                     bullet_text = f"📉 {bullet_text}"
-                elif any(word in bullet_text.lower() for word in ['recommend', 'should', 'action']):
+                elif any(word in bullet_text.lower() for word in ['recommend', 'should', 'action', 'implement']):
                     bullet_text = f"💡 {bullet_text}"
+                elif any(word in bullet_text.lower() for word in ['competitive', 'advantage', 'differentiate']):
+                    bullet_text = f"🎯 {bullet_text}"
                 
-                current_section.append({
+                blocks.append({
                     "object": "block",
                     "type": "bulleted_list_item",
                     "bulleted_list_item": {
@@ -794,14 +837,14 @@ class NotionClient:
                     }
                 })
             
-            # Important callouts (quotes or emphasis)
-            elif line.startswith('"') or ('important' in line.lower()) or ('key' in line.lower() and 'insight' in line.lower()):
-                current_section.append({
+            # Important callouts for key insights
+            elif any(keyword in line.lower() for keyword in ['important', 'key insight', 'critical', 'note:']):
+                blocks.append({
                     "object": "block",
                     "type": "callout",
                     "callout": {
                         "rich_text": [{"type": "text", "text": {"content": line}}],
-                        "icon": {"emoji": "💡"},
+                        "icon": {"emoji": "🔥"},
                         "color": "yellow_background"
                     }
                 })
@@ -809,7 +852,7 @@ class NotionClient:
             # Regular paragraphs
             else:
                 if len(line) > 15 and not line.startswith(('*', '#', '-')):
-                    current_section.append({
+                    blocks.append({
                         "object": "block",
                         "type": "paragraph",
                         "paragraph": {
@@ -817,125 +860,4 @@ class NotionClient:
                         }
                     })
         
-        # Add final section
-        if current_section:
-            blocks.extend(current_section)
-        
         return blocks
-
-    async def update_project_with_report_links(self, project_page_id: str, report_links: Dict[str, str], 
-                                             results: Dict[str, Any]):
-        """Update project page with links to beautiful reports"""
-        try:
-            properties = {}
-            
-            # Create rich text with proper links for each analysis field
-            analysis_fields = {
-                'Market Analysis': 'Market Analysis',
-                'Competitive Analysis': 'Competitive Analysis', 
-                'Risk Assessment': 'Risk Assessment',
-                'Technical Feasibility': 'Technical Feasibility',
-                'Financial Overview': 'Financial Overview'
-            }
-            
-            for field_name, analysis_type in analysis_fields.items():
-                if analysis_type in report_links:
-                    report_id = report_links[analysis_type]
-                    
-                    # Create rich text content with embedded link
-                    rich_text_content = [
-                        {
-                            "type": "text",
-                            "text": {
-                                "content": f"📊 Beautiful {analysis_type} report created with comprehensive tables, charts, and insights. "
-                            }
-                        },
-                        {
-                            "type": "text",
-                            "text": {
-                                "content": "Click here to view detailed analysis →"
-                            },
-                            "annotations": {
-                                "bold": True,
-                                "color": "blue"
-                            },
-                            "href": f"/{report_id.replace('-', '')}"
-                        }
-                    ]
-                    
-                    properties[field_name] = {
-                        "rich_text": rich_text_content
-                    }
-                else:
-                    # Fallback if report creation failed
-                    properties[field_name] = {
-                        "rich_text": [
-                            {
-                                "type": "text",
-                                "text": {
-                                    "content": f"📊 {analysis_type} completed. Check child pages below for detailed report."
-                                }
-                            }
-                        ]
-                    }
-            
-            # Add other fields
-            if 'Priority Score' in results:
-                properties['Priority Score'] = {
-                    "number": results['Priority Score']
-                }
-            
-            if 'Analysis Date' in results:
-                properties['Analysis Date'] = {
-                    "date": {
-                        "start": results['Analysis Date'][:10]
-                    }
-                }
-            
-            if 'AI Recommendation' in results:
-                properties['AI Recommendation'] = {
-                    "rich_text": [
-                        {
-                            "type": "text",
-                            "text": {
-                                "content": str(results['AI Recommendation'])[:2000]
-                            }
-                        }
-                    ]
-                }
-            
-            # Update the page
-            await self.client.pages.update(
-                page_id=project_page_id,
-                properties=properties
-            )
-            
-            logger.info("✅ Project updated with report links")
-            
-        except Exception as e:
-            logger.error(f"Failed to update project links: {str(e)}")
-            import traceback
-            logger.error(traceback.format_exc())
-            
-            # Fallback: Just update with simple text
-            try:
-                fallback_properties = {}
-                for field_name in analysis_fields.keys():
-                    fallback_properties[field_name] = {
-                        "rich_text": [
-                            {
-                                "type": "text", 
-                                "text": {
-                                    "content": f"📊 {field_name} report created. See child pages below for detailed analysis."
-                                }
-                            }
-                        ]
-                    }
-                
-                await self.client.pages.update(
-                    page_id=project_page_id,
-                    properties=fallback_properties
-                )
-                logger.info("✅ Updated with fallback links")
-            except Exception as fallback_error:
-                logger.error(f"Fallback update also failed: {str(fallback_error)}")
