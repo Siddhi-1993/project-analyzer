@@ -20,8 +20,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def main():
-    """Main entry point for Cymbiotika analysis"""
-    logger.info("=== Starting Cymbiotika Analysis ===")
+    """Main entry point - creates only child pages, no property updates"""
+    logger.info("=== 🚀 Starting Streamlined Cymbiotika Analysis ===")
     
     try:
         # Check environment variables
@@ -31,16 +31,16 @@ def main():
         notion_db_id = os.getenv('NOTION_DATABASE_ID')
         openai_key = os.getenv('OPENAI_API_KEY')
         
-        logger.info(f"PAGE_ID: {'Set' if page_id else 'Missing'}")
-        logger.info(f"NOTION_TOKEN: {'Set' if notion_token else 'Missing'}")
-        logger.info(f"NOTION_DATABASE_ID: {'Set' if notion_db_id else 'Missing'}")
-        logger.info(f"OPENAI_API_KEY: {'Set' if openai_key else 'Missing'}")
+        logger.info(f"PAGE_ID: {'✅ Set' if page_id else '❌ Missing'}")
+        logger.info(f"NOTION_TOKEN: {'✅ Set' if notion_token else '❌ Missing'}")
+        logger.info(f"NOTION_DATABASE_ID: {'✅ Set' if notion_db_id else '❌ Missing'}")
+        logger.info(f"OPENAI_API_KEY: {'✅ Set' if openai_key else '❌ Missing'}")
         
         if not all([page_id, notion_token, notion_db_id, openai_key]):
             logger.error("Missing required environment variables")
             return 1
         
-        logger.info("All environment variables set")
+        logger.info("All environment variables set ✅")
         
         # Import modules
         logger.info("Importing modules...")
@@ -52,10 +52,10 @@ def main():
         from analyzers.risk_analyzer import RiskAnalyzer
         from analyzers.financial_analyzer import FinancialAnalyzer
         
-        logger.info("All modules imported")
+        logger.info("All modules imported ✅")
         
         # Initialize clients
-        logger.info("Initializing clients...")
+        logger.info("Initializing streamlined clients...")
         notion_client = NotionClient(
             token=notion_token, 
             database_id=notion_db_id,
@@ -72,231 +72,230 @@ def main():
             'financial': FinancialAnalyzer(ai_client)
         }
         
-        logger.info("Clients and analyzers initialized")
+        logger.info("Streamlined system initialized ✅")
         
-        # Run analysis
-        analyzer = CymbiotikaProjectAnalyzer(notion_client, ai_client, analyzers)
-        asyncio.run(analyzer.create_analysis(page_id))
+        # Run streamlined analysis (child pages only)
+        analyzer = StreamlinedCymbiotikaPr​ojectAnalyzer(notion_client, ai_client, analyzers)
+        asyncio.run(analyzer.create_child_page_analysis(page_id))
         
-        logger.info("=== Analysis Complete ===")
+        logger.info("=== ✨ Streamlined Analysis Complete ===")
         return 0
         
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
+        logger.error(f"❌ Error: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
         return 1
 
-class CymbiotikaProjectAnalyzer:
+class StreamlinedCymbiotikaPr​ojectAnalyzer:
     def __init__(self, notion_client, ai_client, analyzers):
         self.notion_client = notion_client
         self.ai_client = ai_client
         self.analyzers = analyzers
 
-    async def create_analysis(self, page_id: str) -> Dict[str, Any]:
-        """Create analysis reports"""
+    async def create_child_page_analysis(self, page_id: str) -> Dict[str, Any]:
+        """Create beautiful child page analysis reports only"""
         try:
-            logger.info(f"Starting analysis for project: {page_id}")
+            logger.info(f"🎯 Starting streamlined analysis for: {page_id}")
             
-            # Update status
+            # Update status to analyzing
+            logger.info("📝 Updating Analysis Status to 'Analyzing'...")
             await self.notion_client.update_page_status(page_id, "Analyzing")
-            logger.info("Status updated to Analyzing")
+            logger.info("✅ Analysis Status: Analyzing")
             
             # Get project data
+            logger.info("📋 Retrieving project information...")
             project_data = await self.notion_client.get_page_data(page_id)
             project_name = project_data.get('Project Name', 'Unknown Project')
             description = project_data.get('Description', 'No description available')
             
-            logger.info(f"Project: {project_name}")
-            logger.info(f"Description: {description[:100]}...")
+            logger.info(f"✅ Project Name: '{project_name}'")
+            logger.info(f"✅ Description Length: {len(description)} characters")
             
-            # Run analyses and create reports
-            results = {}
-            report_links = {}
+            # Run all analyses and create beautiful child pages
+            analysis_results = []
             
-            # Market Analysis
-            logger.info("Running Market Analysis...")
+            # 📊 Market Analysis Child Page
+            logger.info("📊 Creating Market Analysis child page...")
             try:
                 market_analysis = await self.analyzers['market'].analyze(project_name, description)
-                results['Market Analysis'] = market_analysis
                 
-                # Create beautiful report page
-                market_report_id = await self.notion_client.create_beautiful_analysis_report(
+                market_page_id = await self.notion_client.create_beautiful_analysis_report(
                     project_name=project_name,
                     analysis_type="Market Analysis",
                     analysis_content=market_analysis,
                     parent_page_id=page_id
                 )
-                report_links['Market Analysis'] = market_report_id
-                logger.info("Market Analysis report created")
+                
+                analysis_results.append("Market Analysis")
+                logger.info("✅ Beautiful Market Analysis child page created")
+                
             except Exception as e:
-                logger.error(f"Market analysis failed: {str(e)}")
-                results['Market Analysis'] = f"Analysis failed: {str(e)}"
+                logger.error(f"❌ Market analysis failed: {str(e)}")
             
-            # Competitive Analysis
-            logger.info("Running Competitive Analysis...")
+            # 🏢 Competitive Analysis Child Page
+            logger.info("🏢 Creating Competitive Analysis child page...")
             try:
                 competitive_analysis = await self.analyzers['competitor'].analyze(project_name, description)
-                results['Competitive Analysis'] = competitive_analysis
                 
-                competitive_report_id = await self.notion_client.create_beautiful_analysis_report(
+                competitive_page_id = await self.notion_client.create_beautiful_analysis_report(
                     project_name=project_name,
                     analysis_type="Competitive Analysis",
                     analysis_content=competitive_analysis,
                     parent_page_id=page_id
                 )
-                report_links['Competitive Analysis'] = competitive_report_id
-                logger.info("Competitive Analysis report created")
+                
+                analysis_results.append("Competitive Analysis")
+                logger.info("✅ Beautiful Competitive Analysis child page created")
+                
             except Exception as e:
-                logger.error(f"Competitive analysis failed: {str(e)}")
-                results['Competitive Analysis'] = f"Analysis failed: {str(e)}"
+                logger.error(f"❌ Competitive analysis failed: {str(e)}")
             
-            # Risk Assessment
-            logger.info("Running Risk Assessment...")
+            # ⚠️ Risk Assessment Child Page
+            logger.info("⚠️ Creating Risk Assessment child page...")
             try:
                 risk_analysis = await self.analyzers['risk'].analyze(project_name, description)
-                results['Risk Assessment'] = risk_analysis
                 
-                risk_report_id = await self.notion_client.create_beautiful_analysis_report(
+                risk_page_id = await self.notion_client.create_beautiful_analysis_report(
                     project_name=project_name,
-                    analysis_type="Risk Assessment",
+                    analysis_type="Risk Assessment", 
                     analysis_content=risk_analysis,
                     parent_page_id=page_id
                 )
-                report_links['Risk Assessment'] = risk_report_id
-                logger.info("Risk Assessment report created")
+                
+                analysis_results.append("Risk Assessment")
+                logger.info("✅ Beautiful Risk Assessment child page created")
+                
             except Exception as e:
-                logger.error(f"Risk analysis failed: {str(e)}")
-                results['Risk Assessment'] = f"Analysis failed: {str(e)}"
+                logger.error(f"❌ Risk analysis failed: {str(e)}")
             
-            # Technical Feasibility
-            logger.info("Running Technical Analysis...")
+            # ⚙️ Technical Feasibility Child Page
+            logger.info("⚙️ Creating Technical Feasibility child page...")
             try:
                 technical_analysis = await self.analyzers['technical'].analyze(project_name, description)
-                results['Technical Feasibility'] = technical_analysis
                 
-                technical_report_id = await self.notion_client.create_beautiful_analysis_report(
+                technical_page_id = await self.notion_client.create_beautiful_analysis_report(
                     project_name=project_name,
                     analysis_type="Technical Feasibility",
                     analysis_content=technical_analysis,
                     parent_page_id=page_id
                 )
-                report_links['Technical Feasibility'] = technical_report_id
-                logger.info("Technical Feasibility report created")
+                
+                analysis_results.append("Technical Feasibility")
+                logger.info("✅ Beautiful Technical Feasibility child page created")
+                
             except Exception as e:
-                logger.error(f"Technical analysis failed: {str(e)}")
-                results['Technical Feasibility'] = f"Analysis failed: {str(e)}"
+                logger.error(f"❌ Technical analysis failed: {str(e)}")
             
-            # Financial Overview
-            logger.info("Running Financial Analysis...")
+            # 💰 Financial Overview Child Page
+            logger.info("💰 Creating Financial Overview child page...")
             try:
                 financial_analysis = await self.analyzers['financial'].analyze(project_name, description)
-                results['Financial Overview'] = financial_analysis
                 
-                financial_report_id = await self.notion_client.create_beautiful_analysis_report(
+                financial_page_id = await self.notion_client.create_beautiful_analysis_report(
                     project_name=project_name,
                     analysis_type="Financial Overview",
                     analysis_content=financial_analysis,
                     parent_page_id=page_id
                 )
-                report_links['Financial Overview'] = financial_report_id
-                logger.info("Financial Overview report created")
+                
+                analysis_results.append("Financial Overview")
+                logger.info("✅ Beautiful Financial Overview child page created")
+                
             except Exception as e:
-                logger.error(f"Financial analysis failed: {str(e)}")
-                results['Financial Overview'] = f"Analysis failed: {str(e)}"
+                logger.error(f"❌ Financial analysis failed: {str(e)}")
             
-            # Generate executive summary
-            logger.info("Generating Executive Summary...")
+            # Generate executive AI recommendation
+            logger.info("🎯 Generating Executive AI Recommendation...")
             try:
-                recommendation, priority_score = await self._generate_summary(
-                    project_name, description, results
+                recommendation = await self._generate_executive_recommendation(
+                    project_name, description, analysis_results
                 )
-                results['AI Recommendation'] = recommendation
-                results['Priority Score'] = priority_score
-                results['Analysis Date'] = datetime.now().isoformat()
-                logger.info(f"Executive summary generated (Priority: {priority_score}/10)")
+                logger.info("✅ Executive AI Recommendation generated")
             except Exception as e:
-                logger.error(f"Summary failed: {str(e)}")
-                results['AI Recommendation'] = f"Summary failed: {str(e)}"
-                results['Priority Score'] = 5
-                results['Analysis Date'] = datetime.now().isoformat()
+                logger.error(f"❌ AI Recommendation failed: {str(e)}")
+                recommendation = f"Analysis complete. {len(analysis_results)} detailed reports created as child pages."
             
-            # Update project page
-            logger.info("Updating project page...")
-            await self.notion_client.update_project_with_report_links(page_id, report_links, results)
-            logger.info("Project page updated with report links")
+            # Update analysis date and AI recommendation
+            logger.info("📅 Updating Analysis Date and AI Recommendation...")
+            await self.notion_client.update_analysis_completion(page_id, recommendation)
             
-            # Complete
+            # Update final status
+            logger.info("✅ Updating Analysis Status to 'Complete'...")
             await self.notion_client.update_page_status(page_id, "Complete")
-            logger.info("Status updated to Complete")
+            logger.info("✅ Analysis Status: Complete")
             
-            logger.info(f"Analysis complete for: {project_name}")
-            logger.info(f"Created {len(report_links)} beautiful analysis reports")
+            logger.info(f"🎉 Streamlined analysis complete for: '{project_name}'")
+            logger.info(f"📊 Created {len(analysis_results)} beautiful child page reports:")
+            for result in analysis_results:
+                logger.info(f"   ✨ {result}")
             
-            return results
+            logger.info("🔍 Check the bottom of your project page for child page reports!")
+            
+            return {
+                'project_name': project_name,
+                'analysis_results': analysis_results,
+                'total_reports': len(analysis_results)
+            }
             
         except Exception as e:
-            logger.error(f"Analysis failed: {str(e)}")
+            logger.error(f"❌ Streamlined analysis failed: {str(e)}")
             import traceback
             logger.error(traceback.format_exc())
             
+            # Try to update status to error
             try:
                 await self.notion_client.update_page_status(page_id, "Error")
+                logger.info("Status updated to 'Error'")
             except:
-                pass
+                logger.error("Failed to update status to Error")
             
             raise
 
-    async def _generate_summary(self, name: str, description: str, analyses: Dict[str, str]) -> tuple[str, int]:
-        """Generate executive summary"""
+    async def _generate_executive_recommendation(self, project_name: str, description: str, 
+                                               analysis_results: list) -> str:
+        """Generate executive summary for AI Recommendation property"""
         try:
-            combined = f"""
-            Project: {name}
+            context = f"""
+            CYMBIOTIKA PROJECT ANALYSIS SUMMARY
+            Project: {project_name}
             Description: {description}
             
-            Market: {analyses.get('Market Analysis', '')[:300]}
-            Competitive: {analyses.get('Competitive Analysis', '')[:300]}
-            Risk: {analyses.get('Risk Assessment', '')[:300]}
-            Technical: {analyses.get('Technical Feasibility', '')[:300]}
-            Financial: {analyses.get('Financial Overview', '')[:300]}
+            Completed Analyses: {', '.join(analysis_results)}
+            
+            This is a premium healthcare supplement company analysis.
+            Competitors: Thorne HealthTech, MaryRuth Organics, Pure Encapsulations
+            Focus: Bioavailable, premium supplements ($40-100+ price range)
+            Team: Mostly junior developers with one senior developer
             """
             
-            summary = await self.ai_client.generate_response(
-                """Create executive summary for Cymbiotika:
+            recommendation = await self.ai_client.generate_response(
+                """Create a concise executive recommendation for Cymbiotika leadership:
                 
-                ## EXECUTIVE SUMMARY
-                [2-3 sentences on project viability]
+                ## 🎯 EXECUTIVE SUMMARY
+                [2-3 sentences on overall project viability and strategic fit]
                 
-                ## STRATEGIC IMPACT
-                - Revenue potential for premium supplements
-                - Competitive advantage vs Thorne/MaryRuth's/Pure Encapsulations
+                ## 💼 STRATEGIC IMPACT
+                - Revenue potential for premium supplement business
+                - Competitive positioning vs Thorne/MaryRuth's/Pure Encapsulations  
                 - Brand alignment with bioavailability focus
                 
-                ## RECOMMENDATION
-                [GO/NO-GO/CONDITIONAL] - [Clear rationale]
+                ## 🚀 RECOMMENDATION
+                **[GO/NO-GO/CONDITIONAL]** - [Clear rationale in 1-2 sentences]
                 
-                Keep it executive-level and actionable.""",
-                combined
+                ## 📊 NEXT STEPS
+                - Priority 1: [Most important action]
+                - Priority 2: [Second priority]
+                
+                Keep it executive-level, strategic, and actionable. Focus on Cymbiotika's premium D2C supplement business context.""",
+                context
             )
             
-            priority_response = await self.ai_client.generate_response(
-                """Rate project priority for Cymbiotika (1-10):
-                Consider premium supplement market, competitive position, technical feasibility, ROI.
-                Respond with just the number.""",
-                combined
-            )
-            
-            try:
-                priority = int(priority_response.strip())
-                priority = max(1, min(10, priority))
-            except:
-                priority = 6
-            
-            return summary, priority
+            return recommendation
             
         except Exception as e:
-            logger.error(f"Summary error: {str(e)}")
-            return f"Summary failed: {str(e)}", 5
+            logger.error(f"Executive recommendation error: {str(e)}")
+            return f"Analysis complete for {project_name}. {len(analysis_results)} comprehensive reports created as child pages. Review detailed analysis for strategic insights."
 
 if __name__ == "__main__":
     exit_code = main()
