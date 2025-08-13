@@ -57,61 +57,79 @@ class NotionClient:
         return AsyncWrapper(self._sync_client)
 
     async def get_page_data(self, page_id: str) -> Dict[str, Any]:
-        """Retrieve project data from Notion page"""
-        try:
-            page = await self.client.pages.retrieve(page_id=page_id)
-            properties = page['properties']
-            
-            logger.info(f"🔍 Available properties: {list(properties.keys())}")
-            
-            # Extract project name from any title property
-            data = {}
-            project_name = None
-            
-            # Look for title property (the main title of the page)
-            for prop_name, prop_data in properties.items():
-                if prop_data.get('type') == 'title':
-                    if prop_data.get('title') and len(prop_data['title']) > 0:
-                        project_name = prop_data['title'][0]['text']['content']
-                        logger.info(f"✅ Found project name: '{project_name}'")
-                        break
-            
-            # If no title found, use a fallback
-            if not project_name:
-                project_name = f"Project {page_id[:8]}"
-                logger.warning(f"⚠️ No title found, using fallback: '{project_name}'")
-            
-            data['Project Name'] = project_name
-            
-            # Look for description in common property names
-            description = None
-            description_props = ['Description', 'Summary', 'Details', 'Notes', 'Content']
-            
-            for prop_name in description_props:
-                if prop_name in properties:
-                    prop_data = properties[prop_name]
-                    if prop_data.get('type') == 'rich_text' and prop_data.get('rich_text'):
-                        description = ''.join([text['text']['content'] for text in prop_data['rich_text']])
-                        logger.info(f"✅ Found description in '{prop_name}': {description[:50]}...")
-                        break
-            
-            data['Description'] = description or 'No description provided'
-            
-            logger.info(f"📋 Extracted data:")
-            logger.info(f"   Project: '{data['Project Name']}'")
-            logger.info(f"   Description: {len(data['Description'])} characters")
-            
-            return data
-            
-        except Exception as e:
-            logger.error(f"Failed to get page data: {str(e)}")
-            import traceback
-            logger.error(traceback.format_exc())
-            
-            return {
-                'Project Name': f'Project {page_id[:8]}',
-                'Description': 'Could not retrieve project data'
-            }
+    """Retrieve project data from Notion page including Analysis Types"""
+    try:
+        page = await self.client.pages.retrieve(page_id=page_id)
+        properties = page['properties']
+        
+        logger.info(f"🔍 Available properties: {list(properties.keys())}")
+        
+        # Extract project name from any title property
+        data = {}
+        project_name = None
+        
+        # Look for title property (the main title of the page)
+        for prop_name, prop_data in properties.items():
+            if prop_data.get('type') == 'title':
+                if prop_data.get('title') and len(prop_data['title']) > 0:
+                    project_name = prop_data['title'][0]['text']['content']
+                    logger.info(f"✅ Found project name: '{project_name}'")
+                    break
+        
+        # If no title found, use a fallback
+        if not project_name:
+            project_name = f"Project {page_id[:8]}"
+            logger.warning(f"⚠️ No title found, using fallback: '{project_name}'")
+        
+        data['Project Name'] = project_name
+        
+        # Look for description in common property names
+        description = None
+        description_props = ['Description', 'Summary', 'Details', 'Notes', 'Content']
+        
+        for prop_name in description_props:
+            if prop_name in properties:
+                prop_data = properties[prop_name]
+                if prop_data.get('type') == 'rich_text' and prop_data.get('rich_text'):
+                    description = ''.join([text['text']['content'] for text in prop_data['rich_text']])
+                    logger.info(f"✅ Found description in '{prop_name}': {description[:50]}...")
+                    break
+        
+        data['Description'] = description or 'No description provided'
+        
+        # NEW: Extract Analysis Types multi-select property
+        analysis_types = []
+        if 'Analysis Types' in properties:
+            prop_data = properties['Analysis Types']
+            if prop_data.get('type') == 'multi_select':
+                # Extract the names of selected options
+                multi_select_options = prop_data.get('multi_select', [])
+                analysis_types = [option['name'] for option in multi_select_options]
+                logger.info(f"✅ Found Analysis Types: {analysis_types}")
+            else:
+                logger.warning(f"⚠️ Analysis Types property exists but is not multi_select type: {prop_data.get('type')}")
+        else:
+            logger.warning("⚠️ Analysis Types property not found in page properties")
+        
+        data['Analysis Types'] = analysis_types
+        
+        logger.info(f"📋 Extracted data:")
+        logger.info(f"   Project: '{data['Project Name']}'")
+        logger.info(f"   Description: {len(data['Description'])} characters")
+        logger.info(f"   Selected Analysis Types: {data['Analysis Types']}")
+        
+        return data
+        
+    except Exception as e:
+        logger.error(f"Failed to get page data: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        
+        return {
+            'Project Name': f'Project {page_id[:8]}',
+            'Description': 'Could not retrieve project data',
+            'Analysis Types': []  # Empty list as fallback
+        }
 
     async def update_page_status(self, page_id: str, status: str):
         """Update the analysis status of a project"""
