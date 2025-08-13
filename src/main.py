@@ -5,7 +5,7 @@ import sys
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 # Setup logging
 os.makedirs('logs', exist_ok=True)
@@ -20,8 +20,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def main():
-    """Main entry point - creates only child pages, no property updates"""
-    logger.info("=== 🚀 Starting Streamlined Cymbiotika Analysis ===")
+    """Main entry point - creates only child pages based on selected analysis types"""
+    logger.info("=== 🚀 Starting Selective Cymbiotika Analysis ===")
     
     try:
         # Check environment variables
@@ -55,7 +55,7 @@ def main():
         logger.info("All modules imported ✅")
         
         # Initialize clients
-        logger.info("Initializing streamlined clients...")
+        logger.info("Initializing selective clients...")
         notion_client = NotionClient(
             token=notion_token, 
             database_id=notion_db_id,
@@ -72,13 +72,13 @@ def main():
             'financial': FinancialAnalyzer(ai_client)
         }
         
-        logger.info("Streamlined system initialized ✅")
+        logger.info("Selective system initialized ✅")
         
-        # Run streamlined analysis (child pages only)
-        analyzer = StreamlinedCymbiotikaProjectAnalyzer(notion_client, ai_client, analyzers)
-        asyncio.run(analyzer.create_child_page_analysis(page_id))
+        # Run selective analysis (child pages only for selected types)
+        analyzer = SelectiveCymbiotikaProjectAnalyzer(notion_client, ai_client, analyzers)
+        asyncio.run(analyzer.create_selective_analysis(page_id))
         
-        logger.info("=== ✨ Streamlined Analysis Complete ===")
+        logger.info("=== ✨ Selective Analysis Complete ===")
         return 0
         
     except Exception as e:
@@ -87,16 +87,50 @@ def main():
         logger.error(traceback.format_exc())
         return 1
 
-class StreamlinedCymbiotikaProjectAnalyzer:
+class SelectiveCymbiotikaProjectAnalyzer:
     def __init__(self, notion_client, ai_client, analyzers):
         self.notion_client = notion_client
         self.ai_client = ai_client
         self.analyzers = analyzers
 
-    async def create_child_page_analysis(self, page_id: str) -> Dict[str, Any]:
-        """Create beautiful child page analysis reports only"""
+    async def get_selected_analysis_types(self, page_id: str) -> List[str]:
+        """Get selected analysis types from Notion multi-select property"""
         try:
-            logger.info(f"🎯 Starting streamlined analysis for: {page_id}")
+            logger.info("🔍 Reading selected analysis types...")
+            project_data = await self.notion_client.get_page_data(page_id)
+            
+            # Get the Analysis Types multi-select property
+            analysis_types = project_data.get('Analysis Types', [])
+            
+            if isinstance(analysis_types, list):
+                selected = analysis_types
+            else:
+                # Handle different data formats
+                selected = []
+            
+            logger.info(f"✅ Selected analysis types: {selected}")
+            
+            if not selected:
+                logger.warning("⚠️ No analysis types selected, defaulting to all analyses")
+                return ["Market Analysis", "Competitive Analysis", "Risk Analysis", 
+                       "Technical Feasibility", "Financial Overview"]
+            
+            return selected
+            
+        except Exception as e:
+            logger.error(f"❌ Error reading analysis types: {str(e)}")
+            logger.info("🔄 Falling back to all analysis types")
+            return ["Market Analysis", "Competitive Analysis", "Risk Analysis", 
+                   "Technical Feasibility", "Financial Overview"]
+
+    async def create_selective_analysis(self, page_id: str) -> Dict[str, Any]:
+        """Create analysis reports only for selected types"""
+        try:
+            logger.info(f"🎯 Starting selective analysis for: {page_id}")
+            
+            # Get selected analysis types first
+            selected_types = await self.get_selected_analysis_types(page_id)
+            logger.info(f"📊 Will run {len(selected_types)} analysis types")
             
             # Update status to analyzing
             logger.info("📝 Updating Analysis Status to 'Analyzing'...")
@@ -112,104 +146,109 @@ class StreamlinedCymbiotikaProjectAnalyzer:
             logger.info(f"✅ Project Name: '{project_name}'")
             logger.info(f"✅ Description Length: {len(description)} characters")
             
-            # Run all analyses and create beautiful child pages
+            # Run only selected analyses
             analysis_results = []
             
-            # 📊 Market Analysis Child Page
-            logger.info("📊 Creating Market Analysis child page...")
-            try:
-                market_analysis = await self.analyzers['market'].analyze(project_name, description)
-                
-                market_page_id = await self.notion_client.create_beautiful_analysis_report(
-                    project_name=project_name,
-                    analysis_type="Market Analysis",
-                    analysis_content=market_analysis,
-                    parent_page_id=page_id
-                )
-                
-                analysis_results.append("Market Analysis")
-                logger.info("✅ Beautiful Market Analysis child page created")
-                
-            except Exception as e:
-                logger.error(f"❌ Market analysis failed: {str(e)}")
+            # Market Analysis (if selected)
+            if "Market Analysis" in selected_types:
+                logger.info("📊 Creating Market Analysis child page...")
+                try:
+                    market_analysis = await self.analyzers['market'].analyze(project_name, description)
+                    
+                    market_page_id = await self.notion_client.create_beautiful_analysis_report(
+                        project_name=project_name,
+                        analysis_type="Market Analysis",
+                        analysis_content=market_analysis,
+                        parent_page_id=page_id
+                    )
+                    
+                    analysis_results.append("Market Analysis")
+                    logger.info("✅ Beautiful Market Analysis child page created")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Market analysis failed: {str(e)}")
             
-            # 🏢 Competitive Analysis Child Page
-            logger.info("🏢 Creating Competitive Analysis child page...")
-            try:
-                competitive_analysis = await self.analyzers['competitor'].analyze(project_name, description)
-                
-                competitive_page_id = await self.notion_client.create_beautiful_analysis_report(
-                    project_name=project_name,
-                    analysis_type="Competitive Analysis",
-                    analysis_content=competitive_analysis,
-                    parent_page_id=page_id
-                )
-                
-                analysis_results.append("Competitive Analysis")
-                logger.info("✅ Beautiful Competitive Analysis child page created")
-                
-            except Exception as e:
-                logger.error(f"❌ Competitive analysis failed: {str(e)}")
+            # Competitive Analysis (if selected)
+            if "Competitive Analysis" in selected_types:
+                logger.info("🏢 Creating Competitive Analysis child page...")
+                try:
+                    competitive_analysis = await self.analyzers['competitor'].analyze(project_name, description)
+                    
+                    competitive_page_id = await self.notion_client.create_beautiful_analysis_report(
+                        project_name=project_name,
+                        analysis_type="Competitive Analysis",
+                        analysis_content=competitive_analysis,
+                        parent_page_id=page_id
+                    )
+                    
+                    analysis_results.append("Competitive Analysis")
+                    logger.info("✅ Beautiful Competitive Analysis child page created")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Competitive analysis failed: {str(e)}")
             
-            # ⚠️ Risk Assessment Child Page
-            logger.info("⚠️ Creating Risk Assessment child page...")
-            try:
-                risk_analysis = await self.analyzers['risk'].analyze(project_name, description)
-                
-                risk_page_id = await self.notion_client.create_beautiful_analysis_report(
-                    project_name=project_name,
-                    analysis_type="Risk Assessment", 
-                    analysis_content=risk_analysis,
-                    parent_page_id=page_id
-                )
-                
-                analysis_results.append("Risk Assessment")
-                logger.info("✅ Beautiful Risk Assessment child page created")
-                
-            except Exception as e:
-                logger.error(f"❌ Risk analysis failed: {str(e)}")
+            # Risk Analysis (if selected)
+            if "Risk Analysis" in selected_types:
+                logger.info("⚠️ Creating Risk Assessment child page...")
+                try:
+                    risk_analysis = await self.analyzers['risk'].analyze(project_name, description)
+                    
+                    risk_page_id = await self.notion_client.create_beautiful_analysis_report(
+                        project_name=project_name,
+                        analysis_type="Risk Assessment", 
+                        analysis_content=risk_analysis,
+                        parent_page_id=page_id
+                    )
+                    
+                    analysis_results.append("Risk Assessment")
+                    logger.info("✅ Beautiful Risk Assessment child page created")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Risk analysis failed: {str(e)}")
             
-            # ⚙️ Technical Feasibility Child Page
-            logger.info("⚙️ Creating Technical Feasibility child page...")
-            try:
-                technical_analysis = await self.analyzers['technical'].analyze(project_name, description)
-                
-                technical_page_id = await self.notion_client.create_beautiful_analysis_report(
-                    project_name=project_name,
-                    analysis_type="Technical Feasibility",
-                    analysis_content=technical_analysis,
-                    parent_page_id=page_id
-                )
-                
-                analysis_results.append("Technical Feasibility")
-                logger.info("✅ Beautiful Technical Feasibility child page created")
-                
-            except Exception as e:
-                logger.error(f"❌ Technical analysis failed: {str(e)}")
+            # Technical Feasibility (if selected)
+            if "Technical Feasibility" in selected_types:
+                logger.info("⚙️ Creating Technical Feasibility child page...")
+                try:
+                    technical_analysis = await self.analyzers['technical'].analyze(project_name, description)
+                    
+                    technical_page_id = await self.notion_client.create_beautiful_analysis_report(
+                        project_name=project_name,
+                        analysis_type="Technical Feasibility",
+                        analysis_content=technical_analysis,
+                        parent_page_id=page_id
+                    )
+                    
+                    analysis_results.append("Technical Feasibility")
+                    logger.info("✅ Beautiful Technical Feasibility child page created")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Technical analysis failed: {str(e)}")
             
-            # 💰 Financial Overview Child Page
-            logger.info("💰 Creating Financial Overview child page...")
-            try:
-                financial_analysis = await self.analyzers['financial'].analyze(project_name, description)
-                
-                financial_page_id = await self.notion_client.create_beautiful_analysis_report(
-                    project_name=project_name,
-                    analysis_type="Financial Overview",
-                    analysis_content=financial_analysis,
-                    parent_page_id=page_id
-                )
-                
-                analysis_results.append("Financial Overview")
-                logger.info("✅ Beautiful Financial Overview child page created")
-                
-            except Exception as e:
-                logger.error(f"❌ Financial analysis failed: {str(e)}")
+            # Financial Overview (if selected)
+            if "Financial Overview" in selected_types:
+                logger.info("💰 Creating Financial Overview child page...")
+                try:
+                    financial_analysis = await self.analyzers['financial'].analyze(project_name, description)
+                    
+                    financial_page_id = await self.notion_client.create_beautiful_analysis_report(
+                        project_name=project_name,
+                        analysis_type="Financial Overview",
+                        analysis_content=financial_analysis,
+                        parent_page_id=page_id
+                    )
+                    
+                    analysis_results.append("Financial Overview")
+                    logger.info("✅ Beautiful Financial Overview child page created")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Financial analysis failed: {str(e)}")
             
             # Generate executive AI recommendation
             logger.info("🎯 Generating Executive AI Recommendation...")
             try:
                 recommendation = await self._generate_executive_recommendation(
-                    project_name, description, analysis_results
+                    project_name, description, analysis_results, selected_types
                 )
                 logger.info("✅ Executive AI Recommendation generated")
             except Exception as e:
@@ -225,7 +264,7 @@ class StreamlinedCymbiotikaProjectAnalyzer:
             await self.notion_client.update_page_status(page_id, "Complete")
             logger.info("✅ Analysis Status: Complete")
             
-            logger.info(f"🎉 Streamlined analysis complete for: '{project_name}'")
+            logger.info(f"🎉 Selective analysis complete for: '{project_name}'")
             logger.info(f"📊 Created {len(analysis_results)} beautiful child page reports:")
             for result in analysis_results:
                 logger.info(f"   ✨ {result}")
@@ -234,12 +273,13 @@ class StreamlinedCymbiotikaProjectAnalyzer:
             
             return {
                 'project_name': project_name,
+                'selected_types': selected_types,
                 'analysis_results': analysis_results,
                 'total_reports': len(analysis_results)
             }
             
         except Exception as e:
-            logger.error(f"❌ Streamlined analysis failed: {str(e)}")
+            logger.error(f"❌ Selective analysis failed: {str(e)}")
             import traceback
             logger.error(traceback.format_exc())
             
@@ -253,7 +293,7 @@ class StreamlinedCymbiotikaProjectAnalyzer:
             raise
 
     async def _generate_executive_recommendation(self, project_name: str, description: str, 
-                                               analysis_results: list) -> str:
+                                               analysis_results: list, selected_types: list) -> str:
         """Generate executive summary for AI Recommendation property"""
         try:
             context = f"""
@@ -261,6 +301,7 @@ class StreamlinedCymbiotikaProjectAnalyzer:
             Project: {project_name}
             Description: {description}
             
+            Requested Analyses: {', '.join(selected_types)}
             Completed Analyses: {', '.join(analysis_results)}
             
             This is a premium healthcare supplement company analysis.
@@ -270,10 +311,10 @@ class StreamlinedCymbiotikaProjectAnalyzer:
             """
             
             recommendation = await self.ai_client.generate_response(
-                """Create a concise executive recommendation for Cymbiotika leadership:
+                f"""Create a concise executive recommendation for Cymbiotika leadership based on the {len(analysis_results)} completed analysis reports:
                 
                 ## 🎯 EXECUTIVE SUMMARY
-                [2-3 sentences on overall project viability and strategic fit]
+                [2-3 sentences on overall project viability based on completed analyses]
                 
                 ## 💼 STRATEGIC IMPACT
                 - Revenue potential for premium supplement business
@@ -281,13 +322,14 @@ class StreamlinedCymbiotikaProjectAnalyzer:
                 - Brand alignment with bioavailability focus
                 
                 ## 🚀 RECOMMENDATION
-                **[GO/NO-GO/CONDITIONAL]** - [Clear rationale in 1-2 sentences]
+                **[GO/NO-GO/CONDITIONAL]** - [Clear rationale based on available analysis]
                 
                 ## 📊 NEXT STEPS
                 - Priority 1: [Most important action]
                 - Priority 2: [Second priority]
                 
-                Keep it executive-level, strategic, and actionable. Focus on Cymbiotika's premium D2C supplement business context.""",
+                Note: Base recommendations only on the {len(analysis_results)} completed analyses: {', '.join(analysis_results)}
+                Keep it executive-level, strategic, and actionable.""",
                 context
             )
             
