@@ -11,18 +11,11 @@ class SolutionRecommendationsAnalyzer:
         """Generate solution recommendations based on cross-industry research and evaluate proposed solutions"""
         
         prompt = f"""
-You are a solution strategist for CYMBIOTIKA, analyzing problems and solutions across ALL industries to find the best approaches.
+You are a solution strategist analyzing problems and solutions across ALL industries to find the best approaches.
 
 PROJECT TO ANALYZE:
 Project Name: {project_name}
 Description: {description}
-
-CYMBIOTIKA CONTEXT:
-- Premium bioavailable supplement company ($40-100+ products)
-- D2C subscription ecommerce model
-- Tech Stack: JavaScript/React, Python, PostgreSQL, Shopify, AWS
-- Team: Mostly junior developers + 1 senior developer
-- Target: Health-conscious consumers, 25-55 years, income $75K+
 
 ANALYSIS FRAMEWORK:
 
@@ -35,125 +28,148 @@ ANALYSIS FRAMEWORK:
 - What are the underlying causes vs. symptoms?
 
 **PROBLEM IMPACT ASSESSMENT:**
-- Customer experience impact
+- Customer/user experience impact
 - Business revenue/efficiency impact  
 - Technical complexity impact
-- Team resource requirements
+- Resource requirements and constraints
 
-## 🌐 CROSS-INDUSTRY SOLUTION RESEARCH
-**SUBSCRIPTION ECOMMERCE LEADERS:**
-Research how these companies have solved similar problems:
-- **NETFLIX**: Personalization, user experience, subscription management
-- **SPOTIFY**: Discovery, engagement, retention strategies
-- **DOLLAR SHAVE CLUB**: Subscription simplicity, customer onboarding
-- **STITCH FIX**: Personal curation, data-driven recommendations
-- **BIRCHBOX**: Sample-to-purchase conversion, discovery
-- **BLUE APRON/HELLOFRESH**: Supply chain optimization, customization
-- **PELOTON**: Premium community experience, engagement retention
+## 🌍 CROSS-INDUSTRY SOLUTION RESEARCH
+**RESEARCH COMPANIES THAT HAVE SOLVED SIMILAR PROBLEMS:**
+Identify and analyze companies across different industries that have successfully addressed similar challenges:
 
-**PREMIUM D2C BRANDS:**
-- **GLOSSIER**: Community-driven product development, social integration
-- **WARBY PARKER**: Try-before-buy, virtual experiences
-- **CASPER**: Simplified purchasing, trial periods
-- **AWAY**: Customer support integration, travel-focused features
-- **ALLBIRDS**: Sustainability transparency, values-driven features
+**TECHNOLOGY & SAAS:**
+- How tech companies have solved similar operational or user experience problems
+- Scalable solution architectures and approaches
+- User adoption and engagement strategies
 
-**TECH/SAAS SOLUTIONS:**
-- **SLACK**: User workflow integration, adoption strategies
-- **NOTION**: Customization vs. simplicity balance
-- **AIRBNB**: Trust and verification systems
-- **UBER**: Real-time updates and transparency
-- **ZOOM**: Reliability and ease of use
+**E-COMMERCE & RETAIL:**
+- Customer experience innovations
+- Operational efficiency solutions
+- Personalization and recommendation systems
+
+**SUBSCRIPTION & MEMBERSHIP MODELS:**
+- Retention and engagement strategies
+- Onboarding and user activation
+- Service delivery optimization
+
+**ENTERPRISE & B2B:**
+- Workflow automation solutions
+- Integration and compatibility approaches
+- Scalability and performance optimization
+
+**CONSUMER BRANDS & D2C:**
+- Customer relationship management
+- Brand experience consistency
+- Direct-to-consumer operational excellence
 
 ## 💡 SOLUTION RECOMMENDATIONS
 **PROVEN SOLUTION PATTERNS:**
 Based on cross-industry research, recommend 3-5 specific solutions:
 
 **Solution 1: [Industry Leader Example]**
-- How [Company] solved a similar problem
-- Their specific approach and implementation
+- Company and industry context
+- How they solved a similar problem
+- Their specific approach and implementation strategy
 - Results and metrics achieved
-- How to adapt this for Cymbiotika's supplement business
-- Technical feasibility for your team
-- Estimated implementation timeline
+- How to adapt this approach for your specific context
+- Technical feasibility assessment
+- Estimated implementation timeline and resources
 
-**Solution 2: [Another Industry Example]**
-- Different approach from [Company]
-- Unique aspects and innovation
-- Success metrics and outcomes
-- Adaptation strategy for Cymbiotika
-- Resource requirements and complexity
+**Solution 2: [Different Industry Example]**
+- Alternative company and approach
+- Unique aspects and innovation elements
+- Success metrics and business outcomes
+- Adaptation strategy for your use case
+- Implementation complexity and requirements
 
-**Continue with additional solutions...**
+**Solution 3: [Third Industry Example]**
+- Yet another proven approach
+- Distinctive methodology or technology
+- Measurable results and impact
+- Customization possibilities
+- Risk factors and mitigation strategies
+
+**Continue with additional solutions as relevant...**
 
 ## 🔎 PROPOSED SOLUTION EVALUATION
-**ANALYZE THE CURRENT PROPOSED SOLUTION:**
-If there's a proposed solution in the description, evaluate it:
+**ANALYZE ANY CURRENT PROPOSED SOLUTION:**
+If there's a proposed solution in the project description, evaluate it:
 
 **STRENGTHS OF CURRENT APPROACH:**
-- What aspects are well-thought-out
+- What aspects are well-designed
 - Industry best practices it follows
-- Technical feasibility assessment
-- Alignment with customer needs
+- Feasibility and practicality assessment
+- Alignment with identified problem and user needs
 
-**GAPS AND LOOPHOLES:**
-- What critical aspects are missing
+**GAPS AND IMPROVEMENT OPPORTUNITIES:**
+- What critical aspects might be missing
 - Potential failure points or edge cases
 - User experience weaknesses
-- Technical implementation challenges
-- Scalability concerns
+- Implementation challenges
+- Scalability or maintenance concerns
 
-**IMPROVEMENT SUGGESTIONS:**
-- Specific enhancements to the proposed solution
+**ENHANCEMENT SUGGESTIONS:**
+- Specific improvements to the proposed solution
 - Additional features or considerations
 - Risk mitigation strategies
 - Alternative implementation approaches
 
 ## 🚀 INTEGRATED SOLUTION STRATEGY
 **HYBRID APPROACH RECOMMENDATIONS:**
-Combine the best elements from multiple industries:
-- Core solution framework (from best industry example)
-- User experience enhancements (from premium D2C brands)
-- Technical implementation (optimized for your stack)
-- Subscription-specific optimizations
-- Premium positioning elements
+Combine the best elements from multiple industry solutions:
+- Core solution framework (from most relevant industry example)
+- User experience enhancements (from best-in-class companies)
+- Technical implementation optimizations
+- Scalability and performance considerations
+- Innovation opportunities
 
 **IMPLEMENTATION ROADMAP:**
-- Phase 1: Core problem solution (MVP)
+- Phase 1: Core problem solution (MVP approach)
 - Phase 2: Enhanced features from industry leaders
-- Phase 3: Premium/advanced capabilities
-- Timeline estimates for each phase
+- Phase 3: Advanced capabilities and optimizations
+- Timeline estimates and resource requirements for each phase
+- Key milestones and success metrics
 
 ## 📊 SOLUTION COMPARISON MATRIX
 Create a comparison of the top 3 recommended solutions:
-- Implementation complexity (Junior dev friendly?)
-- Customer impact potential
-- Business value creation
-- Technical requirements
-- Timeline and resource needs
-- Risk factors
-- Long-term scalability
+
+| Criteria | Solution 1 | Solution 2 | Solution 3 |
+|----------|------------|------------|------------|
+| Implementation Complexity | [Assessment] | [Assessment] | [Assessment] |
+| User/Customer Impact | [Potential] | [Potential] | [Potential] |
+| Business Value Creation | [Expected ROI] | [Expected ROI] | [Expected ROI] |
+| Technical Requirements | [Details] | [Details] | [Details] |
+| Timeline & Resources | [Estimates] | [Estimates] | [Estimates] |
+| Risk Factors | [Assessment] | [Assessment] | [Assessment] |
+| Long-term Scalability | [Potential] | [Potential] | [Potential] |
 
 ## 🎯 FINAL RECOMMENDATIONS
 **PRIMARY RECOMMENDATION:**
-- The #1 recommended solution approach
-- Why it's best for Cymbiotika specifically
-- Key success factors and metrics
-- Implementation priority and timeline
+- The #1 recommended solution approach and why
+- Specific reasons it's best for this project context
+- Key success factors and measurable outcomes
+- Implementation priority and realistic timeline
 
 **ALTERNATIVE OPTIONS:**
 - Backup solutions if primary isn't feasible
-- Simpler MVP versions
-- Future enhancement opportunities
+- Simpler MVP versions for faster deployment
+- Future enhancement and evolution opportunities
 
-**INDUSTRY INSPIRATION:**
-- Specific companies to study further
-- Features to benchmark against
-- Success metrics to track
+**INDUSTRY BENCHMARKS:**
+- Specific companies to study and learn from
+- Features and approaches to benchmark against
+- Success metrics and KPIs to track
+- Continuous improvement strategies
 
-Focus on ACTIONABLE, SPECIFIC solutions that have been proven successful in real companies. Include concrete examples, metrics, and implementation details. Research broadly across subscription, ecommerce, D2C, and tech companies to find the most innovative and effective approaches.
+**IMPLEMENTATION CONSIDERATIONS:**
+- Resource allocation recommendations
+- Team skill requirements
+- Technology stack considerations
+- Change management and adoption strategies
 
-The goal is to give Cymbiotika multiple proven solution paths, evaluate any existing proposed solution, and provide a clear roadmap for implementation.
+Focus on ACTIONABLE, SPECIFIC solutions that have been proven successful in real companies. Include concrete examples, metrics, and implementation details. Research broadly across multiple industries to find the most innovative and effective approaches.
+
+The goal is to provide multiple proven solution paths, evaluate any existing proposed solutions, and deliver a clear roadmap for successful implementation based on real-world success stories.
 """
         
         logger.info("Starting cross-industry solution recommendations analysis")
