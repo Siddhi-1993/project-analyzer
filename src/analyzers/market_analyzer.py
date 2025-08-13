@@ -8,61 +8,117 @@ class MarketAnalyzer:
         self.ai_client = ai_client
 
     async def analyze(self, project_name: str, description: str) -> str:
-        """Perform comprehensive market analysis customized for Cymbiotika"""
+        """Perform market analysis for technical projects/features focusing on supplement + subscription/ecommerce markets"""
         
         prompt = f"""
-        You are analyzing this project for Cymbiotika, a premium ecommerce healthcare supplement company that competes with Thorne HealthTech, MaryRuth Organics, and Pure Encapsulations. Cymbiotika is known for bioavailable, clean-label supplements targeting health-conscious consumers.
+You are a market analyst for CYMBIOTIKA, analyzing the market opportunity for this technical project/feature.
 
-        Project to Analyze:
-        Project Name: {project_name}
-        Description: {description}
+PROJECT TO ANALYZE:
+Project Name: {project_name}
+Description: {description}
 
-        Provide comprehensive market analysis covering:
+CYMBIOTIKA CONTEXT:
+- Premium bioavailable supplement company ($40-100+ products)
+- Direct-to-consumer model with subscription options
+- Target customers: Health-conscious consumers, 25-55 years, income $75K+
+- Current channels: Website, mobile app, customer portal
+- Average order value: $80-120
+- Monthly active subscribers: Growing D2C business
+- Key differentiators: Liposomal delivery, premium ingredients, scientific backing
 
-        1. **Healthcare Supplement Market Opportunity**
-           - Market size in the specific supplement/wellness category this project addresses
-           - Growth trends in premium/clean-label supplements (2024-2027)
-           - Consumer spending patterns on health supplements online
-           - Seasonal trends and purchasing behaviors relevant to this product category
+MARKET ANALYSIS FRAMEWORK:
 
-        2. **Target Consumer Analysis**
-           - Primary demographics: health-conscious consumers aged 25-55
-           - Psychographics: wellness enthusiasts, biohackers, clean-living advocates
-           - Pain points this project could address in their wellness journey
-           - Purchase drivers: efficacy, purity, bioavailability, brand trust
-           - Price sensitivity for premium supplements ($30-100+ per bottle range)
+## 🎯 CUSTOMER IMPACT ANALYSIS
+**SUPPLEMENT CUSTOMER PERSPECTIVE:**
+- How will this technical feature improve the supplement buying experience?
+- Customer pain points in supplement shopping/subscription management
+- Expected impact on customer retention and lifetime value
+- Relevance to health-conscious, premium supplement customers
 
-        3. **Ecommerce Healthcare Market Trends**
-           - Direct-to-consumer supplement trends
-           - Subscription vs. one-time purchase preferences
-           - Mobile vs. desktop purchasing patterns for supplements
-           - Social proof and review importance in supplement purchases
-           - Regulatory considerations (FDA, health claims, labeling)
+**CROSS-INDUSTRY INSIGHTS:**
+- How do leading subscription companies (Netflix, Spotify, Dollar Shave Club) handle similar features?
+- Best practices from premium ecommerce brands (Glossier, Away, Allbirds)
+- Customer experience innovations from D2C leaders (Warby Parker, Casper, Peloton)
 
-        4. **Market Positioning Opportunity**
-           - How this project could differentiate from Thorne (clinical focus), MaryRuth's (organic/liquid), Pure Encapsulations (practitioner-focused)
-           - Premium positioning strategy for $40-80+ price points
-           - Clean-label/bioavailability messaging opportunities
-           - Influencer and wellness community marketing potential
+## 📊 BUSINESS METRICS IMPACT
+**SUPPLEMENT INDUSTRY METRICS:**
+- Potential impact on supplement conversion rates (industry avg: 2-4%)
+- Expected effect on supplement AOV (current premium range: $80-120)
+- Subscription retention improvements (industry benchmark: 85% monthly retention)
+- Customer acquisition cost changes for supplement customers
 
-        5. **Revenue Opportunity Assessment**
-           - Estimated market share capture potential
-           - Customer lifetime value in supplement subscriptions
-           - Cross-selling opportunities with existing Cymbiotika products
-           - Seasonal revenue fluctuations (New Year, spring detox, etc.)
-           - International expansion potential for this category
+**SUBSCRIPTION/ECOMMERCE BENCHMARKS:**
+- Conversion rate improvements seen in subscription businesses
+- AOV increases from similar features in premium ecommerce
+- Retention metrics from best-performing subscription companies
+- Customer lifetime value optimization strategies from D2C leaders
 
-        6. **Market Entry Timing**
-           - Current market saturation in this supplement category
-           - Optimal launch timing considering wellness trends
-           - Regulatory approval timelines if applicable
-           - Manufacturing scale-up considerations
+## 🚀 MARKET POSITIONING ADVANTAGE
+**SUPPLEMENT MARKET POSITIONING:**
+- How this differentiates us in the premium supplement space
+- Reinforcement of bioavailability and scientific positioning
+- Appeal to affluent health enthusiasts and biohackers
+- Premium brand perception enhancement vs mass-market supplements
 
-        Provide specific, actionable insights with estimated numbers where possible. Focus on premium D2C supplement market dynamics and consumer behavior patterns.
-        """
+**ECOMMERCE POSITIONING LEARNINGS:**
+- Premium positioning strategies from luxury D2C brands
+- Technical sophistication as competitive advantage
+- Customer experience differentiation from subscription leaders
+- Brand loyalty drivers from successful ecommerce companies
+
+## 📈 GROWTH POTENTIAL ANALYSIS
+**SUPPLEMENT MARKET GROWTH:**
+- Scalability for growing supplement subscriber base
+- Cross-selling opportunities with existing supplement products
+- Market expansion to new supplement customer segments
+- Premium supplement market trends and growth projections
+
+**SUBSCRIPTION/ECOMMERCE GROWTH INSIGHTS:**
+- Growth strategies from successful subscription companies
+- Market expansion tactics from D2C leaders
+- Customer segment expansion opportunities
+- International growth potential based on ecommerce benchmarks
+
+## 💡 MARKET VALIDATION & TRENDS
+**SUPPLEMENT INDUSTRY VALIDATION:**
+- Similar features in supplement/health industry success stories
+- Consumer demand indicators for health and wellness features
+- Regulatory considerations and market acceptance
+- Timing alignment with supplement market trends
+
+**CROSS-INDUSTRY VALIDATION:**
+- Success metrics from comparable ecommerce/subscription features
+- Customer adoption patterns from leading D2C companies
+- Technology adoption rates in premium consumer markets
+- Market readiness based on subscription economy trends
+
+## 🎲 MARKET OPPORTUNITY SIZING
+**SUPPLEMENT MARKET OPPORTUNITY:**
+- Addressable market size for premium supplement customers
+- Revenue potential from improved customer experience
+- Market share capture opportunity vs supplement competitors
+- Premium segment growth in supplement industry
+
+**SUBSCRIPTION/ECOMMERCE MARKET LEARNINGS:**
+- Market size benchmarks from successful subscription companies
+- Revenue impact estimates from similar ecommerce innovations
+- Customer acquisition and retention value improvements
+- Market expansion potential based on D2C success stories
+
+## 📋 STRATEGIC MARKET RECOMMENDATIONS
+- How to position this feature for maximum market impact
+- Customer communication strategy for supplement audience
+- Pricing strategy considerations for premium market
+- Launch timing and market entry recommendations
+- Marketing channels and customer acquisition strategies
+
+Focus on both SUPPLEMENT INDUSTRY specifics and BEST-IN-CLASS SUBSCRIPTION/ECOMMERCE examples. Provide specific, quantitative insights where possible (conversion rates, revenue impact, customer metrics, etc.).
+
+Analyze this technical project/feature as it relates to enhancing CYMBIOTIKA's position in the premium supplement D2C market while learning from subscription and ecommerce industry leaders.
+"""
         
-        logger.info("Starting Cymbiotika-specific market analysis")
-        result = await self.ai_client.generate_response(prompt)
+        logger.info("Starting market analysis for technical project")
+        result = await self.ai_client.generate_response(prompt, f"Market analysis context for {project_name}")
         logger.info("Market analysis completed")
         
         return result
