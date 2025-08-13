@@ -520,127 +520,127 @@ class NotionClient:
         return blocks
 
     def _build_risk_analysis_blocks(self, content: str) -> List[Dict]:
-    """Build risk analysis with dynamic risk matrix based on AI analysis"""
-    blocks = []
-    
-    # Parse risks from AI content
-    parsed_risks = self._extract_risks_from_content(content)
-    
-    if parsed_risks:
-        # Dynamic risk assessment matrix
-        blocks.extend([
-            {
+        """Build risk analysis with dynamic risk matrix based on AI analysis"""
+        blocks = []
+        
+        # Parse risks from AI content
+        parsed_risks = self._extract_risks_from_content(content)
+        
+        if parsed_risks:
+            # Dynamic risk assessment matrix
+            blocks.extend([
+                {
+                    "object": "block",
+                    "type": "heading_2",
+                    "heading_2": {
+                        "rich_text": [{"type": "text", "text": {"content": "⚠️ Project-Specific Risk Assessment Matrix"}}],
+                        "color": "red"
+                    }
+                },
+                {
+                    "object": "block",
+                    "type": "table",
+                    "table": {
+                        "table_width": 4,
+                        "has_column_header": True,
+                        "has_row_header": False,
+                        "children": self._build_dynamic_risk_table(parsed_risks)
+                    }
+                }
+            ])
+        else:
+            # Fallback header if no risks parsed
+            blocks.append({
                 "object": "block",
                 "type": "heading_2",
                 "heading_2": {
-                    "rich_text": [{"type": "text", "text": {"content": "⚠️ Project-Specific Risk Assessment Matrix"}}],
+                    "rich_text": [{"type": "text", "text": {"content": "⚠️ Risk Analysis Results"}}],
                     "color": "red"
                 }
-            },
-            {
-                "object": "block",
-                "type": "table",
-                "table": {
-                    "table_width": 4,
-                    "has_column_header": True,
-                    "has_row_header": False,
-                    "children": self._build_dynamic_risk_table(parsed_risks)
-                }
-            }
-        ])
-    else:
-        # Fallback header if no risks parsed
-        blocks.append({
-            "object": "block",
-            "type": "heading_2",
-            "heading_2": {
-                "rich_text": [{"type": "text", "text": {"content": "⚠️ Risk Analysis Results"}}],
-                "color": "red"
-            }
-        })
-    
-    # Add the full AI analysis content
-    blocks.extend(self._parse_content_to_blocks(content))
-    return blocks
+            })
+        
+        # Add the full AI analysis content
+        blocks.extend(self._parse_content_to_blocks(content))
+        return blocks
 
     def _extract_risks_from_content(self, content: str) -> List[Dict]:
-    """Extract risk information from AI analysis content"""
-    risks = []
-    lines = content.split('\n')
-    
-    current_risk = None
-    
-    for line in lines:
-        line = line.strip()
+        """Extract risk information from AI analysis content"""
+        risks = []
+        lines = content.split('\n')
         
-        # Look for risk headings or bullet points
-        if any(keyword in line.lower() for keyword in ['risk:', 'probability:', 'impact:', 'priority:']):
+        current_risk = None
+        
+        for line in lines:
+            line = line.strip()
             
-            # Try to extract risk name
-            if 'risk:' in line.lower():
-                risk_name = line.split(':', 1)[1].strip()
-                if risk_name and len(risk_name) < 50:  # Reasonable risk name length
-                    current_risk = {
+            # Look for risk headings or bullet points
+            if any(keyword in line.lower() for keyword in ['risk:', 'probability:', 'impact:', 'priority:']):
+                
+                # Try to extract risk name
+                if 'risk:' in line.lower():
+                    risk_name = line.split(':', 1)[1].strip()
+                    if risk_name and len(risk_name) < 50:  # Reasonable risk name length
+                        current_risk = {
+                            'name': risk_name,
+                            'probability': 'Medium',
+                            'impact': 'Medium', 
+                            'priority': 'MEDIUM'
+                        }
+                
+                # Extract probability
+                elif 'probability:' in line.lower() and current_risk:
+                    prob_text = line.split(':', 1)[1].strip().lower()
+                    if 'high' in prob_text:
+                        current_risk['probability'] = 'High'
+                    elif 'low' in prob_text:
+                        current_risk['probability'] = 'Low'
+                    else:
+                        current_risk['probability'] = 'Medium'
+                
+                # Extract impact
+                elif 'impact:' in line.lower() and current_risk:
+                    impact_text = line.split(':', 1)[1].strip().lower()
+                    if 'high' in impact_text:
+                        current_risk['impact'] = 'High'
+                    elif 'low' in impact_text:
+                        current_risk['impact'] = 'Low'
+                    else:
+                        current_risk['impact'] = 'Medium'
+                
+                # Extract priority and finalize risk
+                elif 'priority:' in line.lower() and current_risk:
+                    priority_text = line.split(':', 1)[1].strip().lower()
+                    if 'high' in priority_text or 'critical' in priority_text:
+                        current_risk['priority'] = '🔴 HIGH'
+                    elif 'low' in priority_text:
+                        current_risk['priority'] = '🟢 LOW'
+                    else:
+                        current_risk['priority'] = '🟡 MEDIUM'
+                    
+                    # Add completed risk to list
+                    risks.append(current_risk)
+                    current_risk = None
+            
+            # Alternative: Look for structured risk patterns
+            elif '**' in line and any(keyword in line.lower() for keyword in ['technical', 'integration', 'development', 'user', 'data', 'performance', 'security', 'timeline']):
+                # Extract risk from bold headings
+                risk_name = line.replace('**', '').strip()
+                if len(risk_name) < 60:  # Reasonable length
+                    # Assign default values, AI should provide specifics
+                    risk_priority = self._assess_risk_priority(risk_name, content)
+                    risks.append({
                         'name': risk_name,
                         'probability': 'Medium',
-                        'impact': 'Medium', 
-                        'priority': 'MEDIUM'
-                    }
-            
-            # Extract probability
-            elif 'probability:' in line.lower() and current_risk:
-                prob_text = line.split(':', 1)[1].strip().lower()
-                if 'high' in prob_text:
-                    current_risk['probability'] = 'High'
-                elif 'low' in prob_text:
-                    current_risk['probability'] = 'Low'
-                else:
-                    current_risk['probability'] = 'Medium'
-            
-            # Extract impact
-            elif 'impact:' in line.lower() and current_risk:
-                impact_text = line.split(':', 1)[1].strip().lower()
-                if 'high' in impact_text:
-                    current_risk['impact'] = 'High'
-                elif 'low' in impact_text:
-                    current_risk['impact'] = 'Low'
-                else:
-                    current_risk['impact'] = 'Medium'
-            
-            # Extract priority and finalize risk
-            elif 'priority:' in line.lower() and current_risk:
-                priority_text = line.split(':', 1)[1].strip().lower()
-                if 'high' in priority_text or 'critical' in priority_text:
-                    current_risk['priority'] = '🔴 HIGH'
-                elif 'low' in priority_text:
-                    current_risk['priority'] = '🟢 LOW'
-                else:
-                    current_risk['priority'] = '🟡 MEDIUM'
-                
-                # Add completed risk to list
-                risks.append(current_risk)
-                current_risk = None
+                        'impact': 'Medium',
+                        'priority': risk_priority
+                    })
         
-        # Alternative: Look for structured risk patterns
-        elif '**' in line and any(keyword in line.lower() for keyword in ['technical', 'integration', 'development', 'user', 'data', 'performance', 'security', 'timeline']):
-            # Extract risk from bold headings
-            risk_name = line.replace('**', '').strip()
-            if len(risk_name) < 60:  # Reasonable length
-                # Assign default values, AI should provide specifics
-                risk_priority = self._assess_risk_priority(risk_name, content)
-                risks.append({
-                    'name': risk_name,
-                    'probability': 'Medium',
-                    'impact': 'Medium',
-                    'priority': risk_priority
-                })
-    
-    # If no risks parsed, create some based on project type
-    if not risks:
-        risks = self._generate_default_project_risks(content)
-    
-    # Limit to top 5 most relevant risks
-    return risks[:5]
+        # If no risks parsed, create some based on project type
+        if not risks:
+            risks = self._generate_default_project_risks(content)
+        
+        # Limit to top 5 most relevant risks
+        return risks[:5]
 
 def _assess_risk_priority(self, risk_name: str, full_content: str) -> str:
     """Assess risk priority based on risk name and context"""
