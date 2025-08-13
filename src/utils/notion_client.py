@@ -642,284 +642,105 @@ class NotionClient:
         # Limit to top 5 most relevant risks
         return risks[:5]
 
-def _assess_risk_priority(self, risk_name: str, full_content: str) -> str:
-    """Assess risk priority based on risk name and context"""
-    risk_name_lower = risk_name.lower()
-    
-    # High priority risk indicators
-    if any(keyword in risk_name_lower for keyword in ['security', 'data', 'integration', 'user experience', 'performance']):
-        return '🔴 HIGH'
-    # Low priority risk indicators  
-    elif any(keyword in risk_name_lower for keyword in ['documentation', 'training', 'minor', 'cosmetic']):
-        return '🟢 LOW'
-    else:
-        return '🟡 MEDIUM'
+    def _assess_risk_priority(self, risk_name: str, full_content: str) -> str:
+        """Assess risk priority based on risk name and context"""
+        risk_name_lower = risk_name.lower()
+        
+        # High priority risk indicators
+        if any(keyword in risk_name_lower for keyword in ['security', 'data', 'integration', 'user experience', 'performance']):
+            return '🔴 HIGH'
+        # Low priority risk indicators  
+        elif any(keyword in risk_name_lower for keyword in ['documentation', 'training', 'minor', 'cosmetic']):
+            return '🟢 LOW'
+        else:
+            return '🟡 MEDIUM'
 
-def _generate_default_project_risks(self, content: str) -> List[Dict]:
-    """Generate default project-specific risks if none were parsed"""
-    
-    # Analyze content to determine project type
-    content_lower = content.lower()
-    
-    default_risks = []
-    
-    # Technical implementation risks
-    if any(keyword in content_lower for keyword in ['development', 'code', 'feature', 'app', 'website']):
+    def _generate_default_project_risks(self, content: str) -> List[Dict]:
+        """Generate default project-specific risks if none were parsed"""
+        
+        # Analyze content to determine project type
+        content_lower = content.lower()
+        
+        default_risks = []
+        
+        # Technical implementation risks
+        if any(keyword in content_lower for keyword in ['development', 'code', 'feature', 'app', 'website']):
+            default_risks.append({
+                'name': '💻 Technical Implementation Complexity',
+                'probability': 'Medium',
+                'impact': 'High',
+                'priority': '🔴 HIGH'
+            })
+        
+        # Integration risks
+        if any(keyword in content_lower for keyword in ['integration', 'api', 'system', 'platform']):
+            default_risks.append({
+                'name': '🔗 System Integration Challenges',
+                'probability': 'Medium',
+                'impact': 'Medium',
+                'priority': '🟡 MEDIUM'
+            })
+        
+        # User experience risks
+        if any(keyword in content_lower for keyword in ['user', 'customer', 'experience', 'interface']):
+            default_risks.append({
+                'name': '👥 User Experience Issues',
+                'probability': 'Low',
+                'impact': 'High',
+                'priority': '🟡 MEDIUM'
+            })
+        
+        # Timeline risks (always relevant for projects)
         default_risks.append({
-            'name': '💻 Technical Implementation Complexity',
-            'probability': 'Medium',
-            'impact': 'High',
-            'priority': '🔴 HIGH'
-        })
-    
-    # Integration risks
-    if any(keyword in content_lower for keyword in ['integration', 'api', 'system', 'platform']):
-        default_risks.append({
-            'name': '🔗 System Integration Challenges',
+            'name': '⏰ Development Timeline Delays',
             'probability': 'Medium',
             'impact': 'Medium',
             'priority': '🟡 MEDIUM'
         })
-    
-    # User experience risks
-    if any(keyword in content_lower for keyword in ['user', 'customer', 'experience', 'interface']):
-        default_risks.append({
-            'name': '👥 User Experience Issues',
-            'probability': 'Low',
-            'impact': 'High',
-            'priority': '🟡 MEDIUM'
-        })
-    
-    # Timeline risks (always relevant for projects)
-    default_risks.append({
-        'name': '⏰ Development Timeline Delays',
-        'probability': 'Medium',
-        'impact': 'Medium',
-        'priority': '🟡 MEDIUM'
-    })
-    
-    # Resource risks (relevant for junior-heavy team)
-    default_risks.append({
-        'name': '👨‍💻 Team Skill Gap Challenges',
-        'probability': 'Medium',
-        'impact': 'Medium',
-        'priority': '🟡 MEDIUM'
-    })
-    
-    return default_risks
-
-def _build_dynamic_risk_table(self, risks: List[Dict]) -> List[Dict]:
-    """Build dynamic risk table from parsed risks"""
-    
-    # Table header
-    table_rows = [{
-        "object": "block",
-        "type": "table_row",
-        "table_row": {
-            "cells": [
-                [{"type": "text", "text": {"content": "Risk Category"}, "annotations": {"bold": True}}],
-                [{"type": "text", "text": {"content": "Probability"}, "annotations": {"bold": True}}],
-                [{"type": "text", "text": {"content": "Impact"}, "annotations": {"bold": True}}],
-                [{"type": "text", "text": {"content": "Priority"}, "annotations": {"bold": True}}]
-            ]
-        }
-    }]
-    
-    # Add each parsed risk as a table row
-    for risk in risks:
-        table_rows.append({
-            "object": "block",
-            "type": "table_row",
-            "table_row": {
-                "cells": [
-                    [{"type": "text", "text": {"content": risk['name']}}],
-                    [{"type": "text", "text": {"content": risk['probability']}}],
-                    [{"type": "text", "text": {"content": risk['impact']}}],
-                    [{"type": "text", "text": {"content": risk['priority']}, "annotations": {"bold": True}}]
-                ]
-            }
-        })
-    
-    return table_rows
-
-def _extract_risks_from_content(self, content: str) -> List[Dict]:
-    """Extract risk information from AI analysis content"""
-    risks = []
-    lines = content.split('\n')
-    
-    current_risk = None
-    
-    for line in lines:
-        line = line.strip()
         
-        # Look for risk headings or bullet points
-        if any(keyword in line.lower() for keyword in ['risk:', 'probability:', 'impact:', 'priority:']):
-            
-            # Try to extract risk name
-            if 'risk:' in line.lower():
-                risk_name = line.split(':', 1)[1].strip()
-                if risk_name and len(risk_name) < 50:  # Reasonable risk name length
-                    current_risk = {
-                        'name': risk_name,
-                        'probability': 'Medium',
-                        'impact': 'Medium', 
-                        'priority': 'MEDIUM'
-                    }
-            
-            # Extract probability
-            elif 'probability:' in line.lower() and current_risk:
-                prob_text = line.split(':', 1)[1].strip().lower()
-                if 'high' in prob_text:
-                    current_risk['probability'] = 'High'
-                elif 'low' in prob_text:
-                    current_risk['probability'] = 'Low'
-                else:
-                    current_risk['probability'] = 'Medium'
-            
-            # Extract impact
-            elif 'impact:' in line.lower() and current_risk:
-                impact_text = line.split(':', 1)[1].strip().lower()
-                if 'high' in impact_text:
-                    current_risk['impact'] = 'High'
-                elif 'low' in impact_text:
-                    current_risk['impact'] = 'Low'
-                else:
-                    current_risk['impact'] = 'Medium'
-            
-            # Extract priority and finalize risk
-            elif 'priority:' in line.lower() and current_risk:
-                priority_text = line.split(':', 1)[1].strip().lower()
-                if 'high' in priority_text or 'critical' in priority_text:
-                    current_risk['priority'] = '🔴 HIGH'
-                elif 'low' in priority_text:
-                    current_risk['priority'] = '🟢 LOW'
-                else:
-                    current_risk['priority'] = '🟡 MEDIUM'
-                
-                # Add completed risk to list
-                risks.append(current_risk)
-                current_risk = None
-        
-        # Alternative: Look for structured risk patterns
-        elif '**' in line and any(keyword in line.lower() for keyword in ['technical', 'integration', 'development', 'user', 'data', 'performance', 'security', 'timeline']):
-            # Extract risk from bold headings
-            risk_name = line.replace('**', '').strip()
-            if len(risk_name) < 60:  # Reasonable length
-                # Assign default values, AI should provide specifics
-                risk_priority = self._assess_risk_priority(risk_name, content)
-                risks.append({
-                    'name': risk_name,
-                    'probability': 'Medium',
-                    'impact': 'Medium',
-                    'priority': risk_priority
-                })
-    
-    # If no risks parsed, create some based on project type
-    if not risks:
-        risks = self._generate_default_project_risks(content)
-    
-    # Limit to top 5 most relevant risks
-    return risks[:5]
-
-def _assess_risk_priority(self, risk_name: str, full_content: str) -> str:
-    """Assess risk priority based on risk name and context"""
-    risk_name_lower = risk_name.lower()
-    
-    # High priority risk indicators
-    if any(keyword in risk_name_lower for keyword in ['security', 'data', 'integration', 'user experience', 'performance']):
-        return '🔴 HIGH'
-    # Low priority risk indicators  
-    elif any(keyword in risk_name_lower for keyword in ['documentation', 'training', 'minor', 'cosmetic']):
-        return '🟢 LOW'
-    else:
-        return '🟡 MEDIUM'
-
-def _generate_default_project_risks(self, content: str) -> List[Dict]:
-    """Generate default project-specific risks if none were parsed"""
-    
-    # Analyze content to determine project type
-    content_lower = content.lower()
-    
-    default_risks = []
-    
-    # Technical implementation risks
-    if any(keyword in content_lower for keyword in ['development', 'code', 'feature', 'app', 'website']):
+        # Resource risks (relevant for junior-heavy team)
         default_risks.append({
-            'name': '💻 Technical Implementation Complexity',
-            'probability': 'Medium',
-            'impact': 'High',
-            'priority': '🔴 HIGH'
-        })
-    
-    # Integration risks
-    if any(keyword in content_lower for keyword in ['integration', 'api', 'system', 'platform']):
-        default_risks.append({
-            'name': '🔗 System Integration Challenges',
+            'name': '👨‍💻 Team Skill Gap Challenges',
             'probability': 'Medium',
             'impact': 'Medium',
             'priority': '🟡 MEDIUM'
         })
-    
-    # User experience risks
-    if any(keyword in content_lower for keyword in ['user', 'customer', 'experience', 'interface']):
-        default_risks.append({
-            'name': '👥 User Experience Issues',
-            'probability': 'Low',
-            'impact': 'High',
-            'priority': '🟡 MEDIUM'
-        })
-    
-    # Timeline risks (always relevant for projects)
-    default_risks.append({
-        'name': '⏰ Development Timeline Delays',
-        'probability': 'Medium',
-        'impact': 'Medium',
-        'priority': '🟡 MEDIUM'
-    })
-    
-    # Resource risks (relevant for junior-heavy team)
-    default_risks.append({
-        'name': '👨‍💻 Team Skill Gap Challenges',
-        'probability': 'Medium',
-        'impact': 'Medium',
-        'priority': '🟡 MEDIUM'
-    })
-    
-    return default_risks
+        
+        return default_risks
 
-def _build_dynamic_risk_table(self, risks: List[Dict]) -> List[Dict]:
-    """Build dynamic risk table from parsed risks"""
-    
-    # Table header
-    table_rows = [{
-        "object": "block",
-        "type": "table_row",
-        "table_row": {
-            "cells": [
-                [{"type": "text", "text": {"content": "Risk Category"}, "annotations": {"bold": True}}],
-                [{"type": "text", "text": {"content": "Probability"}, "annotations": {"bold": True}}],
-                [{"type": "text", "text": {"content": "Impact"}, "annotations": {"bold": True}}],
-                [{"type": "text", "text": {"content": "Priority"}, "annotations": {"bold": True}}]
-            ]
-        }
-    }]
-    
-    # Add each parsed risk as a table row
-    for risk in risks:
-        table_rows.append({
+    def _build_dynamic_risk_table(self, risks: List[Dict]) -> List[Dict]:
+        """Build dynamic risk table from parsed risks"""
+        
+        # Table header
+        table_rows = [{
             "object": "block",
             "type": "table_row",
             "table_row": {
                 "cells": [
-                    [{"type": "text", "text": {"content": risk['name']}}],
-                    [{"type": "text", "text": {"content": risk['probability']}}],
-                    [{"type": "text", "text": {"content": risk['impact']}}],
-                    [{"type": "text", "text": {"content": risk['priority']}, "annotations": {"bold": True}}]
+                    [{"type": "text", "text": {"content": "Risk Category"}, "annotations": {"bold": True}}],
+                    [{"type": "text", "text": {"content": "Probability"}, "annotations": {"bold": True}}],
+                    [{"type": "text", "text": {"content": "Impact"}, "annotations": {"bold": True}}],
+                    [{"type": "text", "text": {"content": "Priority"}, "annotations": {"bold": True}}]
                 ]
             }
-        })
-    
-    return table_rows
+        }]
+        
+        # Add each parsed risk as a table row
+        for risk in risks:
+            table_rows.append({
+                "object": "block",
+                "type": "table_row",
+                "table_row": {
+                    "cells": [
+                        [{"type": "text", "text": {"content": risk['name']}}],
+                        [{"type": "text", "text": {"content": risk['probability']}}],
+                        [{"type": "text", "text": {"content": risk['impact']}}],
+                        [{"type": "text", "text": {"content": risk['priority']}, "annotations": {"bold": True}}]
+                    ]
+                }
+            })
+        
+        return table_rows
 
     def _build_technical_analysis_blocks(self, content: str) -> List[Dict]:
         """Build technical analysis with development roadmap"""
