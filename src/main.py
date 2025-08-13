@@ -51,6 +51,7 @@ def main():
         from analyzers.technical_analyzer import TechnicalAnalyzer
         from analyzers.risk_analyzer import RiskAnalyzer
         from analyzers.financial_analyzer import FinancialAnalyzer
+        from analyzers.solution_recommendations_analyzer import SolutionRecommendationsAnalyzer
         
         logger.info("All modules imported ✅")
         
@@ -69,7 +70,8 @@ def main():
             'competitor': CompetitorAnalyzer(ai_client),
             'technical': TechnicalAnalyzer(ai_client),
             'risk': RiskAnalyzer(ai_client),
-            'financial': FinancialAnalyzer(ai_client)
+            'financial': FinancialAnalyzer(ai_client),
+            'solution': SolutionRecommendationsAnalyzer(ai_client)
         }
         
         logger.info("Selective system initialized ✅")
@@ -113,7 +115,7 @@ class SelectiveCymbiotikaProjectAnalyzer:
             if not selected:
                 logger.warning("⚠️ No analysis types selected, defaulting to all analyses")
                 return ["Market Analysis", "Competitive Analysis", "Risk Analysis", 
-                       "Technical Feasibility", "Financial Overview"]
+                       "Technical Feasibility", "Financial Overview", "Solution Recommendations"]
             
             return selected
             
@@ -121,7 +123,7 @@ class SelectiveCymbiotikaProjectAnalyzer:
             logger.error(f"❌ Error reading analysis types: {str(e)}")
             logger.info("🔄 Falling back to all analysis types")
             return ["Market Analysis", "Competitive Analysis", "Risk Analysis", 
-                   "Technical Feasibility", "Financial Overview"]
+                   "Technical Feasibility", "Financial Overview", "Solution Recommendations"]
 
     async def create_selective_analysis(self, page_id: str) -> Dict[str, Any]:
         """Create analysis reports only for selected types"""
@@ -244,6 +246,38 @@ class SelectiveCymbiotikaProjectAnalyzer:
                 except Exception as e:
                     logger.error(f"❌ Financial analysis failed: {str(e)}")
             
+            # Solution Recommendations (if selected)
+            if "Solution Recommendations" in selected_types:
+                logger.info("💡 Creating Solution Recommendations child page...")
+                try:
+                    solution_analysis = await self.analyzers['solution'].analyze(project_name, description)
+                    
+                    solution_page_id = await self.notion_client.create_beautiful_analysis_report(
+                        project_name=project_name,
+                        analysis_type="Solution Recommendations",
+                        analysis_content=solution_analysis,
+                        parent_page_id=page_id
+                    )
+                    
+                    analysis_results.append("Solution Recommendations")
+                    logger.info("✅ Beautiful Solution Recommendations child page created")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Solution recommendations analysis failed: {str(e)}")
+            
+            # Check if any analyses were completed successfully
+            if not analysis_results:
+                logger.error("❌ No analyses completed successfully")
+                await self.notion_client.update_page_status(page_id, "Error")
+                logger.info("Status updated to 'Error' - No successful analyses")
+                return {
+                    'project_name': project_name,
+                    'selected_types': selected_types,
+                    'analysis_results': analysis_results,
+                    'total_reports': len(analysis_results),
+                    'status': 'Error'
+                }
+            
             # Generate executive AI recommendation
             logger.info("🎯 Generating Executive AI Recommendation...")
             try:
@@ -257,12 +291,20 @@ class SelectiveCymbiotikaProjectAnalyzer:
             
             # Update analysis date and AI recommendation
             logger.info("📅 Updating Analysis Date and AI Recommendation...")
-            await self.notion_client.update_analysis_completion(page_id, recommendation)
+            try:
+                await self.notion_client.update_analysis_completion(page_id, recommendation)
+            except Exception as e:
+                logger.error(f"❌ Failed to update analysis completion: {str(e)}")
+                # Continue to status update even if this fails
             
             # Update final status
             logger.info("✅ Updating Analysis Status to 'Complete'...")
-            await self.notion_client.update_page_status(page_id, "Complete")
-            logger.info("✅ Analysis Status: Complete")
+            try:
+                await self.notion_client.update_page_status(page_id, "Complete")
+                logger.info("✅ Analysis Status: Complete")
+            except Exception as e:
+                logger.error(f"❌ Failed to update status to Complete: {str(e)}")
+                # Don't raise here as analysis was successful
             
             logger.info(f"🎉 Selective analysis complete for: '{project_name}'")
             logger.info(f"📊 Created {len(analysis_results)} beautiful child page reports:")
@@ -275,7 +317,8 @@ class SelectiveCymbiotikaProjectAnalyzer:
                 'project_name': project_name,
                 'selected_types': selected_types,
                 'analysis_results': analysis_results,
-                'total_reports': len(analysis_results)
+                'total_reports': len(analysis_results),
+                'status': 'Complete'
             }
             
         except Exception as e:
@@ -283,13 +326,14 @@ class SelectiveCymbiotikaProjectAnalyzer:
             import traceback
             logger.error(traceback.format_exc())
             
-            # Try to update status to error
+            # Always try to update status to error when the main analysis fails
             try:
                 await self.notion_client.update_page_status(page_id, "Error")
-                logger.info("Status updated to 'Error'")
-            except:
-                logger.error("Failed to update status to Error")
+                logger.info("✅ Status updated to 'Error'")
+            except Exception as status_error:
+                logger.error(f"❌ Failed to update status to Error: {str(status_error)}")
             
+            # Re-raise the original exception
             raise
 
     async def _generate_executive_recommendation(self, project_name: str, description: str, 
